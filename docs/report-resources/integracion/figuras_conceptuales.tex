@@ -1,0 +1,71 @@
+% Ilustraciones conceptuales de Lumina Retail.
+% Requiere graphicx; cargar este archivo una vez en el preámbulo.
+% Las decisiones pertenecen a la Arquitectura de Solución y al diseño aprobado.
+% Las escenas ilustran conceptos de negocio; no especifican contratos o servicios.
+
+\providecommand{\LuminaAnchoFigura}{0.55\linewidth}
+\providecommand{\LuminaRutaFiguras}{../report-resources/figures/conceptuales/}
+
+\newcommand{\LuminaFigura}[4]{%
+  \begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\LuminaAnchoFigura,height=4.8cm,keepaspectratio]{\LuminaRutaFiguras#1}%
+    \caption[#2]{#3}%
+    \label{#4}%
+  \end{figure}%
+}
+
+% Portada: usar dentro de titlepage, fuera de figure y sin caption.
+\newcommand{\LuminaPortada}{%
+  \par\begingroup\centering
+  \includegraphics[width=11cm,height=7cm,keepaspectratio]{\LuminaRutaFiguras00_portada_arquitectura_solucion.png}\par
+  \endgroup
+}
+
+\newcommand{\LuminaSilos}{%
+  \LuminaFigura{01_pedido_silos.png}{El pedido que da vueltas}%
+  {Inventarios e información aislados dificultan atender un pedido aun cuando el producto existe en la red.}%
+  {fig:concepto-silos}%
+}
+
+\newcommand{\LuminaFuentes}{%
+  \LuminaFigura{02_fuentes_hibridas.png}{Dos entradas, una operación}%
+  {Históricos de referencia y eventos sintéticos aportan funciones complementarias; la integración conserva el origen y utiliza correspondencias validadas.}%
+  {fig:concepto-fuentes}%
+}
+
+\newcommand{\LuminaCapas}{%
+  \begin{figure}[htbp]
+    \centering
+    \begin{minipage}{\LuminaAnchoFigura}
+      \centering
+      \includegraphics[width=\linewidth,height=4.8cm,keepaspectratio]{\LuminaRutaFiguras03_bronze_silver_gold_tres_mesas.png}\par
+      \smallskip
+      \parbox[t]{0.32\linewidth}{\centering\small\textbf{Bronze}\\Conservar}%
+      \hfill
+      \parbox[t]{0.32\linewidth}{\centering\small\textbf{Silver}\\Preparar}%
+      \hfill
+      \parbox[t]{0.32\linewidth}{\centering\small\textbf{Gold}\\Servir información}%
+    \end{minipage}
+    \caption[Tres mesas de trabajo]{Tres responsabilidades de la plataforma: preservar los originales, preparar datos consistentes y producir información útil para el negocio.}%
+    \label{fig:concepto-capas}%
+  \end{figure}%
+}
+
+\newcommand{\LuminaContinuidad}{%
+  \LuminaFigura{04_inventario_indisponible.png}{La tienda perdió la señal}%
+  {Ante una fuente de inventario indisponible, la vigencia del dato y la verificación operativa condicionan la confirmación del pedido.}%
+  {fig:concepto-continuidad}%
+}
+
+\newcommand{\LuminaGobierno}{%
+  \LuminaFigura{05_pasaporte_dato.png}{El pasaporte del dato}%
+  {Cada producto de información debe conservar trazabilidad de su origen, sus transformaciones y sus controles de acceso.}%
+  {fig:concepto-gobierno}%
+}
+
+\newcommand{\LuminaValor}{%
+  \LuminaFigura{06_alerta_valor.png}{De la alerta al valor}%
+  {El valor esperado se verifica relacionando una señal con la actuación realizada y su resultado operativo.}%
+  {fig:concepto-valor}%
+}
