@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumina · Simulador end-to-end</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">LUMINA RETAIL / VISUALIZADOR</span>
+        <h1>Así funciona la plataforma</h1>
+        <p>Selecciona un recorrido y observa cómo un dato llega desde la fuente hasta la decisión.</p>
+      </div>
+      <div class="top-actions">
+        <button class="mode active" data-mode="streaming">Streaming</button>
+        <button class="mode" data-mode="batch">Batch</button>
+        <button class="icon-button" id="reset" title="Reiniciar simulación" aria-label="Reiniciar">↺</button>
+      </div>
+    </header>
+
+    <section class="scenario-bar">
+      <div class="scenario-copy"><span class="status-dot"></span><strong id="scenario-title">Pedido en tiempo real</strong><span id="scenario-description">Un evento cruza la plataforma y actualiza el inventario.</span></div>
+      <div class="step-counter"><span id="step-number">01</span><span>/</span><span id="step-total">06</span></div>
+    </section>
+
+    <section class="stage" aria-live="polite">
+      <div class="stage-head"><div><span class="eyebrow" id="stage-kicker">01 · ORIGEN</span><h2 id="stage-title">El negocio produce un evento</h2></div><span class="stage-time" id="stage-time">t+0 ms</span></div>
+      <div class="stage-grid">
+        <div class="stage-visual" id="stage-visual"></div>
+        <div class="stage-explain"><p id="stage-text"></p><div class="payload" id="payload"></div></div>
+      </div>
+    </section>
+
+    <section class="flow-wrap">
+      <div class="flow-line"></div>
+      <div class="flow-nodes" id="flow-nodes"></div>
+    </section>
+
+    <nav class="controls" aria-label="Controles de simulación">
+      <button class="control secondary" id="back">← Atrás</button>
+      <button class="control primary" id="next">Siguiente <span>→</span></button>
+      <button class="control ghost" id="play">▶ Reproducir recorrido</button>
+    </nav>
+
+    <section class="bottom-grid">
+      <div class="panel"><div class="panel-title"><span>Componentes relacionados</span><span class="muted" id="component-count"></span></div><div class="component-list" id="component-list"></div></div>
+      <div class="panel output-panel"><div class="panel-title"><span>Salida del recorrido</span><span class="live">● SIMULACIÓN</span></div><div id="output"><strong>Selecciona “Siguiente” para comenzar.</strong><span>El visor no se conecta a GCP ni modifica datos reales.</span></div></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
