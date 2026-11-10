@@ -1,16 +1,20 @@
 # Arquitectura canónica
 
-El único modelo editable de la arquitectura es
-[`RetailSmart_ArquitecturaSolución.archimate`](RetailSmart_ArquitecturaSolución.archimate).
-Las exportaciones ubicadas en `generated/` son artefactos derivados para
-informes y visualización; no deben editarse manualmente ni convertirse en otra
-fuente de decisiones.
+## Fuente única
 
-Para validar que el informe tiene disponibles las exportaciones:
+El único modelo editable es [`RetailSmart_ArquitecturaSolución.archimate`](RetailSmart_ArquitecturaSolución.archimate). No edites manualmente los archivos de `generated/`.
+
+## Artefactos
+
+- [Modelo ArchiMate](RetailSmart_ArquitecturaSolución.archimate)
+- [Exportación PDF](generated/arquitectura-archimate.pdf)
+- [Exportación SVG](generated/arquitectura-archimate.svg)
+- [Diagrama de red](../report-resources/figures/arquitectura/09_arquitectura_red_overview.pdf)
+
+## Validar
 
 ```bash
 make -C docs/architecture validate
 ```
 
-El informe LaTeX usa `generated/arquitectura-archimate.pdf`. Por tanto, el PDF
-del informe siempre muestra la exportación asociada al modelo canónico.
+Si cambia el modelo canónico, regenera las exportaciones antes de actualizar el informe.

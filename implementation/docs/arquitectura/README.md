@@ -1,5 +1,8 @@
 # Arquitectura y trazabilidad
 
+Usa estos archivos para responder tres preguntas: qué se definió, cómo se
+implementa en GCP y qué script lo valida.
+
 | Archivo | Uso |
 |---|---|
 | `alcance.md` | capacidades implementadas, límites y decisiones de arquitectura |
@@ -15,3 +18,8 @@
 - `DEPLOYED_PARTIAL`: existe una parte útil; queda una integración específica por completar.
 - `IMPLEMENTED_WITH_SUBSTITUTION`: la capacidad existe, pero usa una tecnología distinta de la declaración inicial.
 - `VIEWS_READY_CONSUMER_OPTIONAL`: el producto de datos está listo; el consumidor externo queda fuera de alcance.
+
+## Flujo recomendado
+
+`alcance.md` → `mapeo-archimate-gcp.csv` → `componentes-scripts.csv` →
+runbook de [`../operacion/`](../operacion/).

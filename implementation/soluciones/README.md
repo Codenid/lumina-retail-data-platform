@@ -11,6 +11,11 @@ utilidades de aprovisionamiento viven en [`../automatizacion/`](../automatizacio
 | Procesamiento batch demostrativo | Apache Spark / Dataproc | `procesamiento-batch/` | 23, 90 |
 | Orquestación batch | Google Cloud Workflows | `orquestacion-batch/` | 20, 25–28, 50–53 |
 
-No ejecutar directamente los artefactos de este directorio contra GCP. Usar
-los scripts numerados: resuelven identidades, contratos, parámetros,
-idempotencia, estado y validación posterior.
+## Uso
+
+No ejecutes directamente estos artefactos contra GCP. Desde `implementation/`,
+usa los scripts numerados o el runbook; ellos resuelven identidades, contratos,
+parámetros, idempotencia, estado y validación posterior.
+
+Cada subcarpeta contiene una ficha breve de su capacidad y los scripts que la
+gestionan.
