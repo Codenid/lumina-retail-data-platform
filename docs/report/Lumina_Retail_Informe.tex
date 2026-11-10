@@ -218,9 +218,9 @@ RetailSmart Global opera con tiendas físicas y canales de e-commerce sobre una 
 Estas brechas se manifiestan en mayores costos de última milla, retrasos durante campañas de alta demanda, quiebres de inventario, decisiones aisladas entre unidades y mantenimiento reactivo. La plataforma no pretende corregir fallas transaccionales del ERP, OMS, WMS, TMS, CRM o sistemas de mantenimiento, sino reducir la demora entre la generación de datos y la toma de decisiones.
 
 \subsection{Solución propuesta y alcance inicial}
-Proponemos la Plataforma de Datos RetailSmart como soporte de Lumina Retail, entendida como una capa inteligente de datos que integra información de ventas, pedidos, inventario, logística, clientes, interacción digital y telemetría. Lumina conserva histórico, combina señales recientes y genera alertas, análisis, predicciones y recomendaciones para apoyar a los responsables operacionales.
+Proponemos la Plataforma de Datos RetailSmart como soporte de Lumina Retail, entendida como una capa analítica que integra información de ventas, pedidos, inventario, logística, clientes, interacción digital y telemetría. Lumina conserva histórico, combina señales recientes y genera alertas, análisis, predicciones y recomendaciones para apoyar a los responsables operacionales. Las predicciones corresponden a modelos analíticos por lotes; no se incorpora un agente autónomo o conversacional. Agent Platform se reserva para una eventual capacidad basada en agentes y no se presenta como un servicio desplegado en esta solución.
 
-El principio rector es: \textbf{Lumina observa, integra, analiza, aprende, predice y recomienda; el ecosistema operacional decide y ejecuta}. Por tanto, la solución no sustituye la reserva transaccional de stock, el procesamiento del pedido, el picking, el despacho, el pago, la identidad maestra del cliente ni el mantenimiento físico de activos.
+El principio rector es: \textbf{Lumina observa, integra, analiza, anticipa y recomienda; el ecosistema operacional decide y ejecuta}. Por tanto, la solución no sustituye la reserva transaccional de stock, el procesamiento del pedido, el picking, el despacho, el pago, la identidad maestra del cliente ni el mantenimiento físico de activos.
 
 \subsection{Beneficios esperados y decisiones de arquitectura}
 El beneficio depende de convertir datos fragmentados en inteligencia accionable. Una señal de caída acelerada de stock puede activar una revisión de reposición; una predicción geográfica puede sustentar el reposicionamiento de inventario; una alerta de saturación puede permitir preparar capacidad; una vista analítica de cliente puede mejorar la comprensión omnicanal; y una anomalía de telemetría puede priorizar una inspección preventiva.
@@ -245,7 +245,7 @@ El sistema operacional de inventario es la fuente de verdad del stock actual y d
 \end{quote}
 
 \subsection{Visión de Lumina Retail}
-La visión se interpreta como la construcción de una capa inteligente de datos que conecta analíticamente demanda, inventario, capacidad logística, comportamiento del cliente y condición de activos. Lumina puede identificar desde qué ubicación resulta más conveniente atender una demanda, detectar oportunidades de agrupación o priorización, comparar alternativas de atención y anticipar riesgos de quiebre, saturación o degradación.
+La visión se interpreta como la construcción de una capa analítica de datos que conecta demanda, inventario, capacidad logística, comportamiento del cliente y condición de activos. Lumina puede identificar desde qué ubicación resulta más conveniente atender una demanda, detectar oportunidades de agrupación o priorización, comparar alternativas de atención y anticipar riesgos de quiebre, saturación o degradación.
 
 Las funcionalidades de reserva de inventario, ejecución de picking, asignación de transporte, seguimiento transaccional del pedido y procesamiento del pago permanecen en los sistemas operacionales. En consecuencia, la compra bajo demanda, la optimización de pedidos y la omnicanalidad se consideran experiencias de negocio habilitadas por inteligencia de Lumina, no acciones ejecutadas directamente por la plataforma.
 
@@ -405,6 +405,8 @@ La figura~\ref{fig:proceso-tobe} vincula estas capacidades con el recorrido del 
 \subsection{Vista de aplicaciones y servicios de datos}
 Canales, pedidos, ERP, almacenes, logística, CRM, MDM y mantenimiento conservan sus funciones operacionales. La plataforma recibe datos y eventos y entrega señales, planes, indicadores, predicciones y recomendaciones. Los consumidores deben conocer vigencia, calidad y contexto antes de actuar.
 
+Para analítica visual, las vistas autorizadas de BigQuery Gold se plantean para consumo en Data Studio. Data Studio cumple el rol de visualización e informes y no se considera un motor de procesamiento de la plataforma.
+
 Las consultas o APIs posteriores exponen productos de información; una reserva, un pago, una orden de picking, una asignación de vehículo, un cambio de despacho o una intervención de mantenimiento sigue requiriendo validación y ejecución en el sistema transaccional correspondiente. Las vistas completas de aplicaciones frente a procesos se incluyen en el anexo~\ref{anexo:vistas}.
 
 \subsection{Vista tecnológica y correspondencia con GCP}
@@ -548,7 +550,21 @@ Analítica & BigQuery para Gold y consultas SQL & Motor abierto como Trino; requ
 \end{table}
 
 \subsection{Sustento de los componentes seleccionados}
-Pub/Sub permite desacoplar productores y consumidores; Beam expresa transformaciones y ventanas; Dataflow ejecuta el procesamiento gestionado; Cloud Storage conserva archivos y BigQuery organiza consultas. La decisión distribuye responsabilidades por capa y evita usar un almacén analítico para coordinar transacciones. El motor batch definitivo se ajustará al volumen; no se despliega un clúster permanente sin una carga que lo justifique~\cite{pubsub,beam}.
+La selección busca reducir la operación de infraestructura sin perder interoperabilidad donde aportan valor los estándares abiertos. Cada alternativa implica compromisos de control, portabilidad y mantenimiento.
+\begin{table}[H]
+\caption{Justificación técnica de los servicios seleccionados}\label{tab:justificacion-tecnologica}
+\small\begin{tabularx}{\linewidth}{@{}P{.22\linewidth}P{.36\linewidth}Y@{}}\toprule
+Servicio & Motivo de selección & Alternativa y compromiso\\\midrule
+Pub/Sub & Desacopla productores y consumidores sin administrar brokers. & Kafka brinda mayor control y portabilidad; requiere operar capacidad, disponibilidad y actualizaciones.\\
+Apache Beam en Dataflow & Beam expresa transformaciones portables y Dataflow administra su ejecución y escalado. & Flink u otro runner ofrece más control; en modalidad autogestionada requiere operar el clúster.\\
+Cloud Storage y Parquet & El servicio administrado conserva archivos; Parquet facilita lectura columnar y portabilidad. & MinIO u otro almacenamiento autogestionado ofrece control, con responsabilidad adicional de disponibilidad y mantenimiento.\\
+BigQuery & Permite consultas SQL analíticas sin administrar clústeres. & Trino es una alternativa abierta, pero requiere dimensionar y operar cómputo.\\
+Workflows y Cloud Run & Workflows coordina servicios de GCP y Cloud Run aloja la API sin mantener servidores. & Airflow o Kubernetes ofrecen más control y flexibilidad; aumentan la operación de la plataforma.\\
+Knowledge Catalog y Sensitive Data Protection & Integran catálogo, linaje e inspección de datos sensibles con los servicios de GCP. & OpenMetadata, Apache Atlas y detectores abiertos requieren despliegue e integración de componentes adicionales.\\
+Data Studio & Se propone para visualizar vistas autorizadas de BigQuery Gold. & Superset permite autogestión, pero requiere alojar y mantener la plataforma de BI. Data Studio es un consumidor propuesto, no un servicio desplegado en esta implementación.\\\bottomrule
+\end{tabularx}
+\end{table}
+La elección distribuye responsabilidades por capa y evita utilizar el almacén analítico para coordinar transacciones. Los formatos abiertos, la lógica separada de conectores y los contratos versionados reducen costos de salida, pero no hacen automática una migración entre plataformas~\cite{pubsub,beam}.
 
 \subsection{Tecnologías abiertas y servicios administrados de GCP}
 RetailSmart ha expresado una preferencia por tecnologías abiertas. Python, Beam, Parquet y lógica SQL portable atienden parte de ese objetivo. Pub/Sub, Dataflow, Cloud Storage y BigQuery son servicios propietarios; usar clientes abiertos no los convierte en software abierto. Por ello, la arquitectura gestionada requiere una decisión explícita sobre la dependencia de plataforma. Si la prioridad es evitar dependencia de proveedor, se deberá comparar una alternativa abierta antes de consolidar la implementación.
