@@ -1,0 +1,29 @@
+{
+  "bronze": {
+    "eventos_raw": [
+      ["schema_version", "STRING", "REQUIRED"],
+      ["simulation_id", "STRING", "REQUIRED"],
+      ["scenario_id", "STRING", "REQUIRED"],
+      ["producer_id", "STRING", "REQUIRED"],
+      ["event_type", "STRING", "REQUIRED"],
+      ["event_id", "STRING", "REQUIRED"],
+      ["occurred_at", "TIMESTAMP", "REQUIRED"],
+      ["emitted_at", "TIMESTAMP", "REQUIRED"],
+      ["ingested_at", "TIMESTAMP", "NULLABLE"],
+      ["trace_id", "STRING", "REQUIRED"],
+      ["source_system", "STRING", "NULLABLE"],
+      ["payload_json", "JSON", "NULLABLE"],
+      ["is_valid", "BOOL", "NULLABLE"]
+    ],
+    "pedidos_raw": [["batch_id", "STRING", "REQUIRED"], ["file_id", "STRING", "REQUIRED"], ["source_file_uri", "STRING", "REQUIRED"], ["source_system", "STRING", "REQUIRED"], ["source_row_number", "INT64", "REQUIRED"], ["ingested_at", "TIMESTAMP", "REQUIRED"], ["effective_at", "TIMESTAMP", "NULLABLE"], ["record_hash", "STRING", "REQUIRED"], ["payload_json", "JSON", "REQUIRED"], ["is_valid", "BOOL", "REQUIRED"], ["error_reason", "STRING", "NULLABLE"]],
+    "inventario_raw": [["batch_id", "STRING", "REQUIRED"], ["file_id", "STRING", "REQUIRED"], ["source_file_uri", "STRING", "REQUIRED"], ["source_system", "STRING", "REQUIRED"], ["source_row_number", "INT64", "REQUIRED"], ["ingested_at", "TIMESTAMP", "REQUIRED"], ["effective_at", "TIMESTAMP", "REQUIRED"], ["record_hash", "STRING", "REQUIRED"], ["payload_json", "JSON", "REQUIRED"], ["is_valid", "BOOL", "REQUIRED"], ["error_reason", "STRING", "NULLABLE"]],
+    "entregas_raw": [["batch_id", "STRING", "REQUIRED"], ["file_id", "STRING", "REQUIRED"], ["source_file_uri", "STRING", "REQUIRED"], ["source_system", "STRING", "REQUIRED"], ["source_row_number", "INT64", "REQUIRED"], ["ingested_at", "TIMESTAMP", "REQUIRED"], ["effective_at", "TIMESTAMP", "NULLABLE"], ["record_hash", "STRING", "REQUIRED"], ["payload_json", "JSON", "REQUIRED"], ["is_valid", "BOOL", "REQUIRED"], ["error_reason", "STRING", "NULLABLE"]],
+    "telemetria_raw": [["batch_id", "STRING", "REQUIRED"], ["file_id", "STRING", "REQUIRED"], ["source_file_uri", "STRING", "REQUIRED"], ["source_system", "STRING", "REQUIRED"], ["source_row_number", "INT64", "REQUIRED"], ["ingested_at", "TIMESTAMP", "REQUIRED"], ["effective_at", "TIMESTAMP", "NULLABLE"], ["record_hash", "STRING", "REQUIRED"], ["payload_json", "JSON", "REQUIRED"], ["is_valid", "BOOL", "REQUIRED"], ["error_reason", "STRING", "NULLABLE"]]
+  },
+  "silver": {
+    "pedidos": [["order_id", "STRING", "REQUIRED"], ["order_line_id", "STRING", "NULLABLE"], ["customer_id", "STRING", "NULLABLE"], ["store_id", "STRING", "NULLABLE"], ["warehouse_id", "STRING", "NULLABLE"], ["sku_id", "STRING", "REQUIRED"], ["quantity", "INT64", "REQUIRED"], ["occurred_at", "TIMESTAMP", "REQUIRED"], ["quality_status", "STRING", "REQUIRED"]],
+    "inventario": [["snapshot_id", "STRING", "REQUIRED"], ["warehouse_id", "STRING", "REQUIRED"], ["store_id", "STRING", "NULLABLE"], ["sku_id", "STRING", "REQUIRED"], ["on_hand_qty", "INT64", "REQUIRED"], ["reserved_qty", "INT64", "REQUIRED"], ["effective_at", "TIMESTAMP", "REQUIRED"], ["quality_status", "STRING", "REQUIRED"]],
+    "entregas": [["delivery_id", "STRING", "REQUIRED"], ["order_id", "STRING", "REQUIRED"], ["store_id", "STRING", "NULLABLE"], ["region_id", "STRING", "NULLABLE"], ["promised_at", "TIMESTAMP", "NULLABLE"], ["delivered_at", "TIMESTAMP", "NULLABLE"], ["delivery_cost", "NUMERIC", "NULLABLE"], ["quality_status", "STRING", "REQUIRED"]],
+    "telemetria_activos": [["asset_id", "STRING", "REQUIRED"], ["sensor_id", "STRING", "REQUIRED"], ["warehouse_id", "STRING", "NULLABLE"], ["store_id", "STRING", "NULLABLE"], ["metric_name", "STRING", "REQUIRED"], ["metric_value", "FLOAT64", "REQUIRED"], ["unit", "STRING", "REQUIRED"], ["occurred_at", "TIMESTAMP", "REQUIRED"], ["quality_status", "STRING", "REQUIRED"]]
+  }
+}

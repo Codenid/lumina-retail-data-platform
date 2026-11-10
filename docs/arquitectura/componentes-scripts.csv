@@ -1,0 +1,21 @@
+archimate_id,componente,scripts,estado,implementacion
+id-296ccb2b09fe45ae94d44b36120e3e3e,API RetailSmart Insights,63-67,DEPLOYED_VERIFIED,Cloud Run privado y cuatro rutas Gold autenticadas
+id-91fc8e972e2e420e8a86c3afc6a260c8,Audit Store,79-83,DEPLOYED_VERIFIED,Sink Audit Store métrica alerta SLO y evento sintético
+id-8ed726e0c2c14cbb8df73539854db157,Auditoría de Procesamiento,05+43-48,DEPLOYED_PARTIAL,Tópico de auditoría y tabla Gold de auditoría de procesamiento
+id-ca5a5c0eabe44350bb9e644176c4a48b,Bronze Layer,04+05+14-19+30-35+54-58,DEPLOYED_VERIFIED,Tablas raw de eventos y dominios batch
+id-b873b655d9394c5cb6d286a02b8f5de1,Entrenamiento Forecast,36-42,IMPLEMENTED_WITH_SUBSTITUTION,Features y modelo baseline con BigQuery y Cloud Storage
+id-5045ee70d35a4b9ca87e033bd486cbce,Gobierno Datos,70-73,DEPLOYED_VERIFIED,Catálogo metadatos y linaje
+id-b1194951ccb7415e9a6e977fd52c2789,Gold Insights Retail,10+43-48,DEPLOYED_VERIFIED,Insights streaming y productos Gold
+id-2f1d2779d6464c1383e5fbf375aab325,Gold Operational Mart,18+59-62,DEPLOYED_VERIFIED,Operational Mart y scheduled query
+id-5a8ed19fd6f54f95904579b84f6473f4,Herramienta de Reporting Operativo,68-69,VIEWS_READY_CONSUMER_OPTIONAL,Vistas Gold; consumidor externo fuera de alcance
+id-5fe0da5201764bba922e12e1e51ca367,Ingesta Batch,20-28+54-58,DEPLOYED_VERIFIED,Landing y ruta Storage Transfer
+id-2fe58104d85b4e32963decf9d8dba120,Ingesta Streaming,05-13,DEPLOYED_VERIFIED_EPHEMERAL,Pub/Sub Dataflow Bronze y Silver
+id-aebd71adcd8043299773ae5fa2d260eb,Modelo de Demanda,02+36-42,DEPLOYED_VERIFIED,Artefacto forecast en bucket de modelos
+id-b31ac9e67a204bd2996043f98f93cec1,Orquestación Batch,20+25-28+49-53,DEPLOYED_VERIFIED,Workflow Bronze Silver Gold Mart
+id-0c92d1c6db4b4a0d9b97e7771ab92e61,Procesamiento Tiempo Real,43-48,DEPLOYED_VERIFIED_EPHEMERAL,Pipeline Insights Dataflow
+id-8bfb1065cbe54cb69edc49ac21e37d04,Procesamiento Batch,23,DEPLOYED_VERIFIED_EPHEMERAL,PySpark en Dataproc single-node
+id-f1c2e447189e43febff98e7caa03c3ca,Scoring + Planificación Diaria,36-42,IMPLEMENTED_WITH_SUBSTITUTION,Scoring BigQuery y planificación CU02
+id-f6ff7f9f26f14cc8ab051979cca0dad6,Seguridad y Accesos,74-78,DEPLOYED_VERIFIED,IAM KMS Secret Manager CMEK y DLP
+id-010fe399b04e4f32beecd20d8,Silver Layer,04+07-09+14-19+30-35+54-58,DEPLOYED_VERIFIED,Entidades normalizadas streaming y batch
+id-ded4a7cf707743008e148981bac087e2,Tópico Eventos Retail,05,DEPLOYED_VERIFIED,Pub/Sub con ramas Bronze y Dataflow
+id-2629fa70f88949d4a1e76fb2fbbe4650,Tópico Insights Retail,43-48,DEPLOYED_VERIFIED,Pub/Sub para pipeline Insights

@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "domains": {
+    "pedidos": {"producer": "Sistema de Pedidos", "bronze_table": "pedidos_raw", "silver_table": "pedidos", "key": ["order_id", "order_line_id"], "fields": ["order_id", "order_line_id", "customer_id", "store_id", "warehouse_id", "sku_id", "quantity", "occurred_at"]},
+    "inventario": {"producer": "ERP / Sistema de Inventario", "bronze_table": "inventario_raw", "silver_table": "inventario", "key": ["snapshot_id"], "fields": ["warehouse_id", "store_id", "sku_id", "on_hand_qty", "reserved_qty", "effective_at"]},
+    "entregas": {"producer": "Aplicación de Almacenes", "bronze_table": "entregas_raw", "silver_table": "entregas", "key": ["delivery_id"], "fields": ["delivery_id", "order_id", "store_id", "region_id", "promised_at", "delivered_at", "delivery_cost"]},
+    "benchmark_competidores": {"producer": "Benchmark Competidores", "bronze_table": "benchmark_competidores_raw", "silver_table": "benchmark_competidores", "key": ["benchmark_id"], "fields": ["benchmark_id", "competitor_id", "sku_id", "store_id", "observed_at", "competitor_price", "availability", "source_uri"]},
+    "eventos_locales": {"producer": "Eventos Locales", "bronze_table": "eventos_locales_raw", "silver_table": "eventos_locales", "key": ["local_event_id"], "fields": ["local_event_id", "store_id", "event_type", "start_at", "end_at", "impact_score", "source_uri"]},
+    "redes_sociales": {"producer": "Redes Sociales", "bronze_table": "redes_sociales_raw", "silver_table": "redes_sociales", "key": ["post_id"], "fields": ["post_id", "platform", "published_at", "sku_id", "sentiment_score", "engagement_count", "text_hash", "source_uri"]}
+  }
+}

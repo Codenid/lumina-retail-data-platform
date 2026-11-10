@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "project": "{{PROJECT_ID}}",
+  "dataset": "{{PREFIX}}_gold",
+  "location": "{{REGION}}",
+  "consumer": "aplicacion_externa_opcional_futura",
+  "products": {
+    "riesgo_quiebre": {
+      "view": "reporting_riesgo_quiebre",
+      "source": "cu01_riesgo_quiebre_despacho",
+      "dimensions": ["scenario_id", "sku_id", "store_id", "recommended_action", "as_of"],
+      "measures": ["risk_score", "available_qty"]
+    },
+    "plan_reposicion": {
+      "view": "reporting_plan_reposicion",
+      "source": "cu02_plan_reposicion",
+      "dimensions": ["scenario_id", "sku_id", "warehouse_id", "plan_date", "priority"],
+      "measures": ["forecast_qty", "recommended_qty"]
+    },
+    "kpis_operativos": {
+      "view": "reporting_kpis_operativos",
+      "source": "cu03_kpis_operativos",
+      "dimensions": ["scenario_id", "period_date", "channel"],
+      "measures": ["orders", "units", "conversion_rate", "delivery_cost", "sla_rate"]
+    },
+    "alertas_mantenimiento": {
+      "view": "reporting_alertas_mantenimiento",
+      "source": "cu04_alertas_mantenimiento",
+      "dimensions": ["scenario_id", "asset_id", "sensor_id", "warehouse_id", "anomaly_type", "severity", "occurred_at"],
+      "measures": ["metric_value"]
+    }
+  }
+}

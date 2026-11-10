@@ -1,0 +1,25 @@
+{
+  "version": "2.0",
+  "purpose": "Inventario secuencial reproducible. El script 90 queda fuera porque elimina cómputo opcional.",
+  "groups": [
+    {"name": "preflight", "scripts": ["00_verificar_acceso"]},
+    {"name": "fundacion", "scripts": ["01_habilitar_apis", "02_crear_storage", "03_crear_identidad_y_permisos", "04_crear_bigquery", "05_crear_topicos_y_suscripciones", "06_preparar_python"]},
+    {"name": "streaming_base", "scripts": ["07_iniciar_dataflow", "08_publicar_evento", "09_verificar_silver_y_bronze", "10_materializar_gold", "11_cancelar_dataflow", "12_ver_estado", "13_generar_evidencia"]},
+    {"name": "batch_casos_uso", "scripts": ["14_generar_fixtures", "15_cargar_batch_bronze", "16_curar_batch_silver", "17_materializar_gold_casos", "18_crear_mart_operativo", "19_verificar_casos_uso"]},
+    {"name": "integracion_batch", "scripts": ["20_opcional_crear_workflow", "21_opcional_definir_storage_transfer", "22_opcional_preparar_batch", "23_opcional_crear_dataproc", "24_ejecutar_storage_transfer", "25_actualizar_workflow_batch", "26_ejecutar_workflow_batch", "27_verificar_batch_orquestado", "28_generar_evidencia_batch"]},
+    {"name": "nuevas_fuentes_batch", "scripts": ["29_preflight_permisos_batch", "30_preparar_contratos_batch", "31_crear_tablas_batch_nuevas", "32_generar_fixtures_batch_nuevos", "33_cargar_bronze_batch_nuevos", "34_curar_silver_batch_nuevos", "35_verificar_batch_nuevos"]},
+    {"name": "forecast", "scripts": ["36_preflight_forecast", "37_crear_tablas_forecast", "38_generar_features_forecast", "39_entrenar_forecast", "40_ejecutar_scoring_forecast", "41_materializar_planificacion_forecast", "42_verificar_forecast_evidencia"]},
+    {"name": "streaming_insights", "scripts": ["43_preflight_insights_streaming", "44_crear_tablas_insights", "45_iniciar_dataflow_insights", "46_publicar_evento_insights", "47_verificar_insights", "48_cancelar_insights_evidencia"]},
+    {"name": "workflow_batch_completo", "scripts": ["49_preflight_workflow_batch", "50_desplegar_workflow_batch_completo", "51_ejecutar_workflow_batch_completo", "52_verificar_workflow_batch_completo", "53_generar_evidencia_workflow_batch"]},
+    {"name": "batch_productivo", "scripts": ["54_preflight_batch_productivo", "55_generar_y_publicar_fixtures_batch", "56_cargar_seis_fuentes_bronze", "57_curar_seis_fuentes_y_gold", "58_verificar_batch_productivo"]},
+    {"name": "operational_mart", "scripts": ["59_preflight_operational_mart", "60_extender_esquema_operational_mart", "61_integrar_y_programar_operational_mart", "62_verificar_operational_mart"]},
+    {"name": "api_cloud_run", "scripts": ["63_preflight_api_retailsmart", "64_permisos_api_retailsmart", "65_desplegar_api_retailsmart", "66_verificar_api_retailsmart", "67_evidencia_api_retailsmart"]},
+    {"name": "reporting", "scripts": ["68_preflight_vistas_reporting", "69_crear_vistas_reporting"]},
+    {"name": "gobierno", "scripts": ["70_preflight_gobierno_catalogo", "71_habilitar_catalogo_linaje", "72_publicar_metadatos_catalogo", "73_verificar_linaje_y_evidencia"]},
+    {"name": "seguridad", "scripts": ["74_preflight_seguridad", "75_crear_kms_seguridad", "76_crear_secreto_cmek", "77_configurar_dlp", "78_verificar_seguridad_evidencia"]},
+    {"name": "auditoria_observabilidad", "scripts": ["79_preflight_auditoria_observabilidad", "80_crear_audit_store", "81_crear_metricas_alertas", "82_crear_slo_api", "83_verificar_observabilidad_evidencia"]}
+  ],
+  "optional_recommendations": [
+    {"name": "aplicacion_externa_consumo_reporting", "after": "83", "status": "OPTIONAL_OUT_OF_SCOPE", "description": "Aplicación demo externa que consuma las vistas Gold. Looker no se aprovisiona."}
+  ]
+}

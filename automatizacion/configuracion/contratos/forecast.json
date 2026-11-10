@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "algorithm": "moving_average_7d_baseline",
+  "feature_table": "forecast_features",
+  "prediction_table": "forecast_predictions",
+  "feature_key": ["sku_id", "warehouse_id", "feature_date"],
+  "prediction_key": ["sku_id", "warehouse_id", "forecast_date", "model_version"],
+  "features": [
+    "sku_id", "warehouse_id", "feature_date", "demand_qty_7d", "demand_qty_28d", "inventory_qty", "reserved_qty"
+  ],
+  "predictions": [
+    "sku_id", "warehouse_id", "forecast_date", "horizon_days", "predicted_qty", "model_version", "training_run_id", "prediction_status"
+  ],
+  "artifact_uri_pattern": "gs://{MODELS}/forecast/{DEMO_RUN_ID}/{MODEL_VERSION}/model.json"
+}

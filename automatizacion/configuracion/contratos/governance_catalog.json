@@ -1,0 +1,50 @@
+{
+  "project": "{{PROJECT_ID}}",
+  "location": "{{REGION}}",
+  "catalog": {
+    "api": "dataplex.googleapis.com",
+    "lineage_api": "datalineage.googleapis.com",
+    "overview_aspect": "dataplex-types.global.overview"
+  },
+  "datasets": {
+    "bronze": {
+      "id": "{{PREFIX}}_bronze",
+      "overview": "Capa Bronze de RetailSmart. Conserva eventos crudos y cargas/staging de las fuentes batch antes de su normalización."
+    },
+    "silver": {
+      "id": "{{PREFIX}}_silver",
+      "overview": "Capa Silver de RetailSmart. Contiene registros normalizados y curados de los dominios retail para consumo analítico interno."
+    },
+    "gold": {
+      "id": "{{PREFIX}}_gold",
+      "overview": "Capa Gold de RetailSmart. Contiene productos analíticos de los cuatro casos de uso, el operational mart y vistas de reporting."
+    }
+  },
+  "asset_overview": {
+    "bronze": "Capa Bronze — objeto {asset}. Dominio/fuente: {domain}. Contenido raw o staging batch; conserva el dato de entrada antes de curación.",
+    "silver": "Capa Silver — objeto {asset}. Dominio: {domain}. Datos curados y normalizados para integración analítica interna.",
+    "gold": "Capa Gold — objeto {asset}. Producto analítico: {domain}. Materializa resultados de casos de uso o vistas derivadas para consumo interno."
+  },
+  "lineage": {
+    "mode": "automatic_bigquery",
+    "pairs": [
+      {
+        "source": "cu01_riesgo_quiebre_despacho",
+        "target": "reporting_riesgo_quiebre"
+      },
+      {
+        "source": "cu02_plan_reposicion",
+        "target": "reporting_plan_reposicion"
+      },
+      {
+        "source": "cu03_kpis_operativos",
+        "target": "reporting_kpis_operativos"
+      },
+      {
+        "source": "cu04_alertas_mantenimiento",
+        "target": "reporting_alertas_mantenimiento"
+      }
+    ],
+    "view_sql": "SELECT * FROM `{project}.{dataset}.{source}`"
+  }
+}

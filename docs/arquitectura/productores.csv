@@ -1,0 +1,13 @@
+archimate_id,producer,mode,destination
+id-2d98e7184d864505ada8234ec4163008,Aplicación de Almacenes,batch,Storage Landing Zone
+id-3a59d6fbc5244f3291c82966ce770801,Benchmark Competidores,batch,Storage Landing Zone
+id-5c67d35188a0484a9e31bfe5fe6f0b07,ERP / Sistema de Inventario,batch,Storage Landing Zone
+id-461814f37ede4d7d9d13e8b3b9c600bb,Eventos Locales,batch,Storage Landing Zone
+id-fa827a45f6334d7fa81e4f81b7616bae,Redes Sociales,batch,Storage Landing Zone
+id-0d9c6d206fe145c9a3c065d25584d022,Sistema de Pedidos,batch,Storage Landing Zone
+id-0035721989114a46af260434cddb641b,Aplicaciones de Canal (Web / App / POS),streaming,Tópico Eventos Retail
+id-68f797120ee647dc9272b2367d134137,Cámaras frigoríficas,streaming,Tópico Eventos Retail
+id-290734d56ef8404a919c6b72b79d40ee,Estantería Inteligente,streaming,Tópico Eventos Retail
+id-a291f717742d4835af237a0e95417078,Sensores IoT de Tienda,streaming,Tópico Eventos Retail
+id-0c42195fcc814ae285645d446ffad50f,Sensores de almacén,streaming,Tópico Eventos Retail
+id-ead2c875fc784f32b2936634d1835f7a,Tracking Logistico,streaming,Tópico Eventos Retail
