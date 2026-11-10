@@ -618,320 +618,41 @@ La figura~\ref{fig:apoyo-carga} sintetiza los escenarios de carga propuestos y s
 % ================================================================
 \AperturaCapitulo{Justificación económica y estimación de costos}{15_analisis_costos.png}{sec:costos}
 
-La arquitectura TO-BE de Lumina Retail se evalúa económicamente a partir de los componentes que soportan la ingesta, el procesamiento, el almacenamiento y el consumo analítico. La estimación diferencia los precios públicos de Google Cloud de los supuestos de dimensionamiento utilizados para el escenario inicial.
-
-\begin{quote}
-\small
-\textbf{Nota de estimación.} Los precios unitarios corresponden a tarifas públicas de Google Cloud consultadas a octubre de 2026. Los volúmenes, workers y patrones de consulta son supuestos de dimensionamiento del proyecto y no representan datos productivos reales de RetailSmart. Los montos son estimaciones referenciales y pueden variar por configuración, operaciones auxiliares, transferencia de datos, servicios complementarios, descuentos por compromiso y acuerdos comerciales. Dado el tamaño de RetailSmart y su crecimiento exponencial, un convenio empresarial o compromiso de consumo con Google Cloud podría reducir los precios efectivos frente a las tarifas públicas utilizadas.
-\end{quote}
-
-\subsection{Estructura de costos de la arquitectura}
-Los costos se organizan según la capacidad técnica que soportan dentro de la solución.
+La estimación económica se consolida en el visor web de costeo de Lumina Retail. El visor relaciona cada servicio de la arquitectura con su capacidad, unidad de cobro, costo base y escenarios de crecimiento. Este capítulo presenta únicamente el resumen ejecutivo; el desglose por servicio, los supuestos y la trazabilidad de cada tarifa se mantienen en el entregable web y su exportación de datos.
 
 \begin{table}[H]
-\caption{Estructura de costos de Lumina Retail}\label{tab:estructura-costos}
+\caption{Escenarios de costo de infraestructura GCP}\label{tab:escenarios-costos}
 \small
-\begin{tabularx}{\linewidth}{@{}P{.27\linewidth}P{.36\linewidth}Y@{}}\toprule
-Grupo & Propósito & Componentes principales\\\midrule
-A. Ingesta y mensajería & Recibir y desacoplar eventos operacionales & Pub/Sub\\
-B. Procesamiento streaming & Procesar eventos de baja latencia & Dataflow / Apache Beam\\
-C. Almacenamiento Data Lake & Conservar Bronze y Silver & Cloud Storage + Parquet\\
-D. Analítica y consumo Gold & Consultas, indicadores y productos analíticos & BigQuery\\
-E. Operación y observabilidad & Logs, métricas, monitoreo y soporte & Cloud Logging, Monitoring, discos y servicios auxiliares\\
-F. Procesamiento batch & Cargas históricas, planes diarios y reprocesos & Jobs batch bajo demanda\\
-G. Crecimiento y campañas & Absorber expansión del negocio y picos & Autoscaling, mayor volumen y consultas\\\bottomrule
+\begin{tabularx}{\linewidth}{@{}P{.38\linewidth}YYY@{}}\toprule
+Escenario & Mensual & Anual & Uso\\\midrule
+Base actual & \textbf{USD 3,271.71} & \textbf{USD 39,260.52} & Operación nominal\\
+Conservador ($1.8\times$) & \textbf{USD 5,889.08} & \textbf{USD 70,668.96} & Crecimiento y variación operativa\\
+Máxima demanda ($2.5\times$) & \textbf{USD 8,179.28} & \textbf{USD 98,151.36} & Picos, mayor consumo y holgura\\\bottomrule
 \end{tabularx}
 \end{table}
 
-\subsection{Supuestos de dimensionamiento}
-La estimación base corresponde a un escenario inicial de validación de la arquitectura. Estos valores deberán recalibrarse con telemetría real antes de producción.
+El costo mensual base es el indicador principal de control presupuestario. La proyección conservadora aplica un factor de $1.8\times$ y la máxima demanda un factor de $2.5\times$ sobre el consumo base. Estos factores permiten presupuestar antes de disponer de telemetría productiva y deben recalibrarse con la facturación observada.
 
 \begin{table}[H]
-\caption{Supuestos utilizados para la estimación económica}\label{tab:supuestos-costos}
-\small
-\begin{tabularx}{\linewidth}{@{}P{.48\linewidth}Y@{}}\toprule
-Variable & Supuesto\\\midrule
-Carga nominal & 20 eventos/s\\
-Eventos mensuales nominales & 51.84 millones\\
-Payload raw mensual & 74.2 GiB\\
-Pico de campaña & 400 eventos/s\\
-Duración del pico & 2 h/día durante 3 días\\
-Dataflow nominal & 2 workers streaming\\
-Dataflow pico & hasta 8 workers\\
-Worker de referencia & 4 vCPU + 15 GiB RAM\\
-Silver & 50\% de Bronze\\
-Gold & 20\% de Bronze\\
-Consultas BigQuery & 2 TiB/mes\\\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Precios unitarios de referencia}
-Las tarifas utilizadas corresponden a precios públicos de referencia y sirven como base para los cálculos del escenario.
-
-\begin{table}[H]
-\caption{Precios unitarios utilizados}\label{tab:precios-gcp-costos}
-\small
-\begin{tabularx}{\linewidth}{@{}P{.25\linewidth}P{.40\linewidth}Y@{}}\toprule
-Servicio & Unidad & Tarifa utilizada\\\midrule
-Pub/Sub & Throughput después de 10 GiB/mes gratuitos & USD 40/TiB\\
-Dataflow streaming & vCPU & USD 0.069/h\\
-Dataflow streaming & Memoria & USD 0.003557/GiB-h\\
-Dataflow Streaming Engine & Unidad de cómputo & USD 0.089/unidad\\
-Cloud Storage Standard & Almacenamiento regional & aprox. USD 0.020/GiB-mes\\
-BigQuery on-demand & Después de 1 TiB/mes gratuito & USD 6.25/TiB\\
-BigQuery active logical storage & Después de 10 GiB/mes gratuitos & aprox. USD 0.023/GiB-mes\\\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Ingesta y mensajería}
-Para Pub/Sub se considera una publicación y una entrega principal al consumidor streaming. El volumen mensual estimado es 148.4 GiB entre publicación y entrega.
-
-\[
-\frac{148.4-10}{1024}\times 40 \approx \text{USD }5.41/\text{mes}
-\]
-
-\begin{table}[H]
-\caption{Costo estimado de ingesta y mensajería}\label{tab:costo-pubsub}
-\small
-\begin{tabularx}{\linewidth}{@{}XY@{}}\toprule
-Concepto & Estimado mensual\\\midrule
-Pub/Sub & USD 5.41\\\bottomrule
-\end{tabularx}
-\end{table}
-
-El costo de mensajería es reducido frente al cómputo y aumenta principalmente con el volumen procesado.
-
-\subsection{Procesamiento streaming}
-El procesamiento de baja latencia representa el principal componente cuantificable del escenario base.
-
-\[
-2\times730\times[(4\times0.069)+(15\times0.003557)]
-\approx \text{USD }480.86/\text{mes}
-\]
-
-Para el pico se consideran seis workers adicionales durante seis horas acumuladas:
-
-\[
-6\times6\times[(4\times0.069)+(15\times0.003557)]
-\approx \text{USD }11.86
-\]
-
-\begin{table}[H]
-\caption{Costo estimado de procesamiento streaming}\label{tab:costo-dataflow}
-\small
-\begin{tabularx}{\linewidth}{@{}XY@{}}\toprule
-Concepto & Estimado mensual\\\midrule
-Dataflow nominal: CPU + RAM & USD 480.86\\
-Capacidad adicional de pico & USD 11.86\\
-\textbf{Subtotal procesamiento streaming} & \textbf{USD 492.72}\\\bottomrule
-\end{tabularx}
-\end{table}
-
-No se incluyen en este subtotal Streaming Engine, Persistent Disk ni otros consumos que dependen de la ejecución real.
-
-\subsection{Almacenamiento Data Lake}
-Bronze conserva aproximadamente 74.2 GiB mensuales. Para Silver se asume una reducción a 50\% del volumen Bronze como efecto de curación y compresión.
-
-\begin{table}[H]
-\caption{Costo estimado del Data Lake}\label{tab:costo-datalake}
-\small
-\begin{tabularx}{\linewidth}{@{}P{.35\linewidth}P{.30\linewidth}Y@{}}\toprule
-Capa & Volumen estimado & Costo mensual\\\midrule
-Bronze & 74.2 GiB & USD 1.48\\
-Silver & 37.1 GiB & USD 0.74\\
-\textbf{Subtotal Data Lake} & 111.3 GiB & \textbf{USD 2.22}\\\bottomrule
-\end{tabularx}
-\end{table}
-
-El almacenamiento representa una proporción menor del escenario base. El uso de Parquet en Silver reduce volumen y lectura.
-
-\subsection{Analítica y consumo Gold}
-Para Gold se utiliza como referencia 20\% del volumen Bronze. El escenario de consultas considera 2 TiB/mes, de los cuales 1 TiB se toma como volumen facturable después de la franquicia utilizada en el cálculo.
-
-\begin{table}[H]
-\caption{Costo estimado de la capa Gold}\label{tab:costo-gold}
-\small
-\begin{tabularx}{\linewidth}{@{}XY@{}}\toprule
-Concepto & Estimado mensual\\\midrule
-Gold storage & USD 0.11\\
-Consultas BigQuery & USD 6.25\\
-\textbf{Subtotal Gold / Analítica} & \textbf{USD 6.36}\\\bottomrule
-\end{tabularx}
-\end{table}
-
-El costo analítico depende principalmente de los bytes consultados. El particionamiento, la selección de columnas y los agregados son los principales controles de optimización.
-
-\subsection{Operación y observabilidad}
-Los consumos asociados a operación se incorporarán al TCO cuando exista medición del comportamiento real.
-
-\begin{table}[H]
-\caption{Costos variables pendientes de medición}\label{tab:costos-observabilidad}
-\small
-\begin{tabularx}{\linewidth}{@{}P{.38\linewidth}Y@{}}\toprule
-Componente & Consideración\\\midrule
-Streaming Engine & Precio oficial conocido; consumo pendiente de medición\\
-Persistent Disk & Dependiente del job final\\
-Cloud Logging & Dependiente del volumen de logs\\
-Cloud Monitoring & Dependiente de métricas y retención\\
-Transferencia de red & Dependiente de flujo entre regiones y servicios\\
-Operaciones Cloud Storage & Dependiente de la cantidad de requests\\\bottomrule
-\end{tabularx}
-\end{table}
-
-\subsection{Procesamiento batch}
-La arquitectura no contempla inicialmente un clúster batch permanente. Las cargas históricas, planes diarios de inventario, conciliaciones, reprocesos y preparación de datasets se ejecutarán bajo demanda.
-
-\begin{quote}
-\textbf{Criterio económico:} no mantener capacidad batch permanente mientras la carga no demuestre que es necesaria.
-\end{quote}
-
-El costo de esta capacidad se contabilizará según ejecución real y no forma parte del subtotal base.
-
-\subsection{Consolidado mensual}
-El escenario cuantificable actual se resume a continuación.
-
-\begin{table}[H]
-\caption{Consolidado mensual de costos cuantificables}\label{tab:consolidado-costos}
-\small
-\begin{tabularx}{\linewidth}{@{}XY@{}}\toprule
-Grupo & Estimado mensual\\\midrule
-A. Ingesta y mensajería & USD 5.41\\
-B. Procesamiento streaming & USD 492.72\\
-C. Data Lake & USD 2.22\\
-D. Gold / Analítica & USD 6.36\\
-E. Operación y observabilidad & Pendiente de medición\\
-F. Batch & Variable por ejecución\\\midrule
-\textbf{Subtotal cuantificable mensual} & \textbf{USD 506.71}\\\bottomrule
-\end{tabularx}
-\end{table}
-
-La referencia anual del subtotal cuantificable es:
-
-\[
-506.71\times12 \approx \text{USD }6{,}080.50/\text{año}
-\]
-
-Este valor no representa el TCO definitivo de la plataforma.
-
-\subsection{Sensibilidad al crecimiento}
-RetailSmart opera a gran escala y presenta crecimiento exponencial. La siguiente sensibilidad muestra el efecto del aumento de volumen sobre eventos y almacenamiento; no constituye una predicción comercial.
-
-\begin{table}[H]
-\caption{Sensibilidad del volumen ante crecimiento}\label{tab:sensibilidad-costos}
-\small
-\begin{tabularx}{\linewidth}{@{}P{.28\linewidth}P{.18\linewidth}P{.25\linewidth}Y@{}}\toprule
-Escenario & Eventos/s & Eventos/mes & Bronze raw/mes\\\midrule
-Base & 20 & 51.84 M & 74.2 GiB\\
-5x & 100 & 259.2 M & 371 GiB\\
-10x & 200 & 518.4 M & 742 GiB\\
-Pico de campaña & 400 & Variable & Variable\\\bottomrule
-\end{tabularx}
-\end{table}
-
-Pub/Sub y Storage crecen principalmente con el volumen. Dataflow depende de autoscaling, ventanas, estado y lógica del pipeline; BigQuery depende de los bytes efectivamente consultados. Las pruebas de carga deberán preceder cualquier aumento permanente de capacidad.
-
-\subsection{Acuerdos comerciales y compromisos}
-La estimación utiliza precios públicos. Para una organización del tamaño de RetailSmart pueden existir compromisos de consumo, contratos empresariales, descuentos por volumen, créditos o condiciones negociadas con Google Cloud.
-
-\begin{table}[H]
-\caption{Referencia de compromisos sobre CPU y memoria nominales}\label{tab:descuentos-costos}
-\small
-\begin{tabularx}{\linewidth}{@{}P{.35\linewidth}P{.25\linewidth}Y@{}}\toprule
-Modalidad & Descuento de referencia & CPU + RAM nominal estimado\\\midrule
-Sin compromiso & 0\% & USD 480.86/mes\\
-Compromiso 1 año & aprox. 20\% & USD 384.69/mes\\
-Compromiso 3 años & aprox. 40\% & USD 288.51/mes\\\bottomrule
-\end{tabularx}
-\end{table}
-
-Estos valores son ilustrativos y no sustituyen una cotización empresarial.
-
-\subsection{Indicadores de eficiencia}
-La eficiencia tecnológica puede compararse mediante el costo por millón de eventos:
-
-\[
-\text{Costo por millón de eventos}
-=
-\frac{506.71}{51.84}
-\approx \text{USD }9.77
-\]
-
-Este indicador no implica que Lumina procese transaccionalmente un pedido. Para negocio, el indicador de referencia es:
-
-\[
-\text{Costo operativo por pedido}
-=
-\frac{\text{preparación + almacenamiento + distribución + última milla}}
-{\text{pedidos entregados}}
-\]
-
-Lumina busca reducir este indicador mediante menor distancia de última milla, menos reposiciones urgentes, mejor posicionamiento de inventario, anticipación de saturación y mantenimiento proactivo.
-
-\subsection{Controles FinOps}
-El control económico de la plataforma se realizará mediante indicadores que permitan relacionar gasto tecnológico y evolución del negocio.
-
-\begin{table}[H]
-\caption{Indicadores FinOps propuestos}\label{tab:finops-costos}
+\caption{Supuestos de dimensionamiento utilizados en el visor}\label{tab:supuestos-costos-web}
 \small
 \begin{tabularx}{\linewidth}{@{}P{.43\linewidth}Y@{}}\toprule
-Indicador & Uso\\\midrule
-Costo mensual total & Control presupuestario\\
-Costo por vertical & Identificar capacidades costosas\\
-Costo por millón de eventos & Medir eficiencia de procesamiento\\
-GiB almacenados por capa & Controlar crecimiento Bronze/Silver/Gold\\
-TiB consultados en BigQuery & Controlar costo analítico\\
-Costo por campaña & Medir impacto de picos\\
-Workers promedio y máximo & Evaluar autoscaling\\
-Costo operativo por pedido & Relacionar plataforma con valor de negocio\\\bottomrule
+Variable & Escenario de planificación\\\midrule
+Región & us-central1\\
+Disponibilidad & 24/7\\
+Clientes activos & 9 millones\\
+Sucursales & 8\\
+Carga nominal & 20 eventos/s\\
+Pico de campaña & 400 eventos/s\\
+Dataflow & 2 workers base; hasta 8 en pico; 4 vCPU y 15 GiB por worker\\
+BigQuery & 2 TiB consultados/mes\\
+Modelo de precios & USD, on-demand; sin créditos ni descuentos\\\bottomrule
 \end{tabularx}
 \end{table}
 
-\subsection{Conclusión económica}
-La estimación muestra que el procesamiento streaming concentra el principal costo cuantificable, mientras que mensajería, almacenamiento y analítica representan una proporción menor. Para una organización grande y en crecimiento, la arquitectura debe mantenerse elástica, observable y económicamente controlable, evitando sobredimensionar permanentemente la capacidad.
+Los servicios considerados corresponden a los componentes de la arquitectura: Pub/Sub, Dataflow, Cloud Storage, BigQuery, Cloud Logging, Cloud Monitoring, Persistent Disk, Storage Transfer Service, Workflows, Dataproc, Cloud Run, Artifact Registry, Dataplex/Knowledge Catalog, KMS/IAM/DLP y Looker. Los precios unitarios se contrastan con las tarifas oficiales de Google Cloud; cuando el consumo aún no tiene telemetría, el visor utiliza un supuesto técnico explícito y lo identifica como tal.
 
-La estrategia económica consiste en almacenar eficientemente, utilizar streaming cuando la baja latencia genera valor, ejecutar batch bajo demanda, ampliar capacidad temporalmente en campañas y medir de forma continua el costo unitario.
-
-\subsection{Resumen ejecutivo de costo del proyecto}
-A partir de los componentes cuantificables, el escenario base presenta el siguiente presupuesto de referencia:
-
-\begin{table}[H]
-\caption{Resumen ejecutivo del costo de infraestructura}\label{tab:resumen-costos}
-\small
-\begin{tabularx}{\linewidth}{@{}XY@{}}\toprule
-Concepto & Estimación\\\midrule
-Costo mensual cuantificable & USD 506.71/mes\\
-Costo anual cuantificable & USD 6,080.52/año\\
-Reserva de planeamiento propuesta (20\%) & USD 1,216.10/año\\
-\textbf{Presupuesto anual de referencia para infraestructura} & \textbf{aprox. USD 7,296.62/año}\\\bottomrule
-\end{tabularx}
-\end{table}
-
-La reserva del 20\% constituye una holgura presupuestaria para consumos aún no medidos —Streaming Engine, discos, logging, operaciones de almacenamiento, batch y servicios auxiliares— y no corresponde a una tarifa de Google Cloud.
-
-\begin{quote}
-\textbf{Presupuesto inicial recomendado de infraestructura cloud: USD 600--610 mensuales, equivalente a aproximadamente USD 7.3 mil anuales para el escenario base.}
-\end{quote}
-
-Este monto corresponde al costo operativo tecnológico estimado de la plataforma. No incluye horas de implementación, arquitectura, ingeniería de datos, QA, soporte operativo, licencias externas, capacitación, migración de datos ni servicios profesionales.
-
-Por tanto, el TCO completo deberá considerar:
-
-\[
-\text{TCO}
-=
-\text{Infraestructura Cloud}
-+
-\text{Implementación}
-+
-\text{Operación y soporte}
-+
-\text{Licencias}
-+
-\text{Evolución y mantenimiento}
-\]
-
-Para el escenario inicial, RetailSmart debería considerar un presupuesto cloud del orden de \textbf{USD 7,000--7,500 por año}, sujeto a recalibración con datos productivos y a posibles descuentos corporativos con Google Cloud.
-
+El resultado constituye un presupuesto de planificación tecnológica, no una factura ni un compromiso comercial. Las tarifas efectivas pueden variar por región, modalidad de contratación, descuentos por compromiso, transferencia, retención y consumo real. La aplicación web es la fuente operativa para recalibrar el costeo; el informe se actualizará con la versión aprobada del escenario.
 
 \AperturaCapitulo{Fiabilidad, alta disponibilidad y recuperación}{10_fiabilidad_recuperacion.png}{sec:resiliencia}
 \subsection{Escenarios de falla y consecuencias operativas}
@@ -1145,6 +866,35 @@ Los identificadores y nombres deberán cotejarse con el catálogo Git antes de u
 
 \subsection{Labels y atributos}
 Los atributos comunes incluyen proyecto, entorno, dominio, responsable y gestión por script. El detalle de verticales se conserva en el catálogo; un recurso compartido puede usar \path{vertical=multi} cuando proceda. El atributo \path{layer} se reserva para Bronze, Silver o Gold y \path{role} describe ingesta, consumo, función técnica o seguridad. Alcance global y política de residencia se documentan por separado.
+
+\clearpage
+\Seccion{Detalle del costeo GCP}\label{anexo:costeo}
+Este anexo concentra la matriz que alimenta el visor web de costos. Los valores corresponden al escenario base de planificación; el escenario conservador aplica $1.8\times$ y el de máxima demanda $2.5\times$. Las tarifas deben contrastarse con la configuración vigente de Google Cloud antes de contratar capacidad.
+\begin{table}[H]
+\caption{Matriz resumida de servicios y supuestos de costeo}\label{tab:detalle-costeo-gcp}
+\scriptsize
+\begin{tabularx}{\linewidth}{@{}P{.22\linewidth}P{.18\linewidth}P{.25\linewidth}P{.18\linewidth}Y@{}}\toprule
+Servicio & Grupo & Capacidad base & Unidad de cobro & Costo base mensual\\\midrule
+Pub/Sub & Ingesta & 51.84 M eventos/mes & USD/TiB & USD 5.41\\
+Dataflow + Beam & Streaming & 2 workers; 4 vCPU; 15 GiB & vCPU, memoria, Engine & USD 492.72\\
+Cloud Storage + Parquet & Data Lake & 74.2 GiB Bronze; 37.1 GiB Silver & GiB-mes & USD 2.22\\
+BigQuery & Gold y analítica & 2 TiB consultados/mes & TiB procesado + storage & USD 6.36\\
+Cloud Logging & Observabilidad & 80 GB logs/mes & GB ingerido + retenido & USD 260.00\\
+Cloud Monitoring & Observabilidad & 300 GB métricas/mes & métricas + alertas & USD 180.00\\
+Persistent Disk & Dataflow & Discos temporales de workers & GB-mes + I/O & USD 120.00\\
+Storage Transfer & Carga histórica & 1 TB/mes & GB transferido & USD 75.00\\
+Workflows & Batch & 30 ejecuciones diarias & ejecución + pasos & USD 120.00\\
+Dataproc & Batch & 1 cluster; 40 h/mes & cluster-hora & USD 650.00\\
+Cloud Run & API & 2 M requests/mes & request + CPU & USD 280.00\\
+Artifact Registry & Construcción & 100 GB de imágenes & GB almacenado + red & USD 80.00\\
+Dataplex / Knowledge Catalog & Gobierno & 50 activos & activo + procesamiento & USD 220.00\\
+KMS + IAM + DLP & Seguridad & 10 llaves; 2 inspecciones & operaciones + inspección & USD 180.00\\
+Looker & Consumo analítico & 20 usuarios lectores & licencia + usuarios & USD 600.00\\\midrule
+\textbf{Total base mensual} & & & & \textbf{USD 3,271.71}\\
+\textbf{Máxima demanda ($2.5\times$)} & & & & \textbf{USD 8,179.28}\\\bottomrule
+\end{tabularx}
+\end{table}
+La matriz es un resumen de planificación y no sustituye la cotización de GCP. La versión operativa y editable se mantiene en el visor web de costeo del proyecto.
 
 \clearpage
 \Seccion{Vistas de la Arquitectura de Solución}\label{anexo:vistas}
