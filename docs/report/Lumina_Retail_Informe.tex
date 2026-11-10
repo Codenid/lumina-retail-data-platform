@@ -21,6 +21,7 @@
 \hypersetup{pdftitle={Lumina Retail: El retail que ve, decide y actúa en tiempo real},pdfauthor={RetailSmart Global},pdflang={es-PE},bookmarksnumbered=true}
 \input{parametros.tex}
 \graphicspath{{../report-resources/figures/portadas/}{../report-resources/figures/vinetas/}{../report-resources/figures/apoyo/}{../report-resources/figures/arquitectura/}}
+\newcommand{\ArquitecturaFinal}{../architecture/generated/arquitectura-archimate.pdf}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
 \setlength{\parindent}{0pt}
@@ -383,6 +384,12 @@ La figura~\ref{fig:apoyo-correspondencias} sintetiza la independencia de las fue
 El diseño preserva la autoridad de los sistemas operativos, desacopla publicación y consumo, conserva evidencia de origen y separa calidad de datos de su uso. El cómputo continuo se reserva a decisiones cuya utilidad disminuye con la demora. El procesamiento batch consolida históricos y planes. Las responsabilidades lógicas no obligan a crear un servicio o job independiente por cada caja del diagrama.
 
 La Arquitectura de Solución documenta las decisiones arquitectónicas y su correspondencia con componentes, flujos, contratos y tecnologías. Sus vistas representan el modelo de solución. ArchiMate puede utilizarse como notación de modelado. El catálogo y las especificaciones de contratos se mantienen consistentes con el diseño aprobado y con su versión.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth,height=16cm,keepaspectratio]{\ArquitecturaFinal}
+\caption{Arquitectura final aprobada de Lumina Retail, exportada desde el modelo ArchiMate canónico.}\label{fig:arquitectura-final}
+\end{figure}
 
 \subsection{Vista de negocio y relación con las verticales}
 La atención inteligente de pedidos se interpreta como una secuencia de observación, análisis y recomendación sobre una operación que continúa siendo ejecutada por los sistemas transaccionales. V1 aporta conciencia situacional mediante señales recientes; V2 anticipa demanda y necesidades de inventario; V3 explica desempeño y comportamiento transversal; V4 anticipa degradación de activos. Estas capacidades pueden converger sobre un mismo problema sin convertir a Lumina en el ejecutor de la acción.

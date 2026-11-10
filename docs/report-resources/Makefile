@@ -4,11 +4,14 @@ MAIN := Lumina_Retail_Informe
 LATEXMK ?= latexmk
 FLAGS := -pdf -interaction=nonstopmode -halt-on-error
 
-.PHONY: all pdf clean rebuild open
+.PHONY: all architecture pdf clean rebuild open
 
 all: pdf
 
-pdf:
+architecture:
+	$(MAKE) -C "$(REPORT_DIR)/../architecture" validate
+
+pdf: architecture
 	mkdir -p "$(BUILD_DIR)"
 	cd "$(REPORT_DIR)" && TEXINPUTS="$(REPORT_DIR)//:$(REPORT_DIR)/../report-resources//:$${TEXINPUTS}:" $(LATEXMK) $(FLAGS) -outdir="$(BUILD_DIR)" $(MAIN).tex
 	cp "$(BUILD_DIR)/$(MAIN).pdf" "$(REPORT_DIR)/$(MAIN).pdf"

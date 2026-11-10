@@ -74,7 +74,7 @@ La implementación se organiza en tres capacidades principales: limpieza, enriqu
 
 ### Arquitectura de referencia y arquitectura implementada
 
-![Vista ArchiMate completa](../assets/arquitectura/arquitectura-archimate.svg)
+![Vista ArchiMate completa](../../../../docs/architecture/generated/arquitectura-archimate.svg)
 
 La vista ArchiMate describe los componentes, integraciones y responsabilidades de la solución. El inventario de servicios y sus configuraciones se presenta en el anexo A.
 
