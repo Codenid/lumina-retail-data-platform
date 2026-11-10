@@ -1,7 +1,7 @@
 # Gobierno y catálogo
 
 **Grupo:** `gobierno`  
-**Consola GCP:** Dataplex y Data Lineage
+**Consola GCP:** [Knowledge Catalog](https://console.cloud.google.com/dataplex/studio?referrer=search&authuser=0&project=prj-codenid) y Data Lineage
 
 ## Validación manual
 
@@ -16,7 +16,7 @@ Ejecutar desde la raíz del repositorio. Estos comandos no crean, actualizan ni 
 ```bash
 source automatizacion/scripts/common.sh
 gcloud services list --enabled --project="$PROJECT_ID" --filter='config.name:(datalineage.googleapis.com OR dataplex.googleapis.com)' --format='table(config.name,state)'
-gcloud dataplex datascans list --project="$PROJECT_ID" --location="$REGION" --format='table(name,state)' 2>/dev/null || true
+
 ```
 
 ## Validación automática existente

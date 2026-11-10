@@ -17,7 +17,7 @@ RUNBOOKS = [
  ("10-operational-mart.md","Operational Mart","operational_mart","BigQuery Data Transfer","Scheduled query y última ejecución están en estado correcto.","Revisar periodicidad y costo de la scheduled query."),
  ("11-api-cloud-run.md","API Cloud Run","api_cloud_run","Cloud Run, IAM y BigQuery","Servicio privado READY y cuatro rutas autenticadas devuelven datos.","No habilitar acceso anónimo."),
  ("12-reporting-gold.md","Reporting Gold","reporting","BigQuery","Cuatro vistas Gold existen y devuelven datos.","Consumidor BI externo permanece fuera de alcance."),
- ("13-gobierno.md","Gobierno y catálogo","gobierno","Dataplex y Data Lineage","Activos catalogados, metadatos y vínculos Gold→vista visibles.","No elimina metadatos ni linaje existente."),
+ ("13-gobierno.md","Gobierno y catálogo","gobierno","[Knowledge Catalog](https://console.cloud.google.com/dataplex/studio?referrer=search&authuser=0&project=prj-codenid) y Data Lineage","Activos catalogados, metadatos y vínculos Gold→vista visibles.","No elimina metadatos ni linaje existente."),
  ("14-seguridad.md","Seguridad","seguridad","IAM, KMS, Secret Manager y DLP","Clave regional, secreto CMEK, IAM por recurso y plantilla DLP verificados.","No exponer valores de secretos ni resultados con PII."),
  ("15-auditoria-observabilidad.md","Auditoría y observabilidad","auditoria_observabilidad","Logging, BigQuery y Monitoring","Sink, Audit Store, métrica, alerta y SLO existen; evento sintético llega al store.","Revisar retención y presupuesto de logs."),
 ]
@@ -75,7 +75,7 @@ for view in vw_insights_streaming vw_riesgo_quiebre_despacho vw_plan_reposicion 
 done''',
     "gobierno": '''source automatizacion/scripts/common.sh
 gcloud services list --enabled --project="$PROJECT_ID" --filter='config.name:(datalineage.googleapis.com OR dataplex.googleapis.com)' --format='table(config.name,state)'
-gcloud dataplex datascans list --project="$PROJECT_ID" --location="$REGION" --format='table(name,state)' 2>/dev/null || true''',
+''',
     "seguridad": '''source automatizacion/scripts/common.sh
 gcloud kms keyrings list --project="$PROJECT_ID" --location="$REGION"
 gcloud secrets list --project="$PROJECT_ID" --format='table(name,createTime)'

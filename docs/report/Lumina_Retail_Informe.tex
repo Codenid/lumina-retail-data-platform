@@ -20,6 +20,7 @@
 \definecolor{suave}{HTML}{F3F5F5}
 \hypersetup{pdftitle={Lumina Retail: El retail que ve, decide y actúa en tiempo real},pdfauthor={RetailSmart Global},pdflang={es-PE},bookmarksnumbered=true}
 \input{parametros.tex}
+\newcommand{\KnowledgeCatalog}{\href{https://console.cloud.google.com/dataplex/studio?referrer=search\&authuser=0\&project=prj-codenid}{Knowledge Catalog}}
 \graphicspath{{../report-resources/figures/portadas/}{../report-resources/figures/vinetas/}{../report-resources/figures/apoyo/}{../report-resources/figures/arquitectura/}}
 \newcommand{\ArquitecturaFinal}{../architecture/generated/arquitectura-archimate.pdf}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
@@ -954,7 +955,7 @@ El procedimiento identifica el incidente, contiene resultados incorrectos, resta
 RetailSmart conserva la propiedad del dato. Cada dominio debe designar un responsable de definición y calidad y cada producto de información un responsable de consumo. Se propone clasificar los conjuntos según sensibilidad y necesidad operativa, minimizando datos personales. El contrato con el proveedor debe proteger acceso, exportación y continuidad, y dejar clara la titularidad de los datos y de la tecnología.
 
 \subsection{Catálogo, diccionario y metadatos}
-El catálogo documenta propósito, fuente, owner o responsable, granularidad, esquema, versión, calidad y consumidores. El diccionario define el significado de campos, unidades y claves. Los metadatos de recepción no sustituyen el tiempo del negocio. En esta fase se propone un catálogo versionado y metadatos obligatorios; la implantación completa de una herramienta gestionada de catálogo se incorpora cuando el alcance lo justifique.
+La implementación habilita \KnowledgeCatalog{} y Data Lineage, registra metadatos descriptivos en activos BigQuery de las capas Bronze, Silver y Gold, y verifica relaciones de linaje entre productos Gold y vistas de consumo. El catálogo permite mantener contexto de negocio junto con la estructura técnica del activo. El diccionario complementa estos metadatos con el significado de campos, unidades y claves; los metadatos de recepción no sustituyen el tiempo del negocio. La cobertura documentada corresponde a los activos y relaciones revisados en la implementación.
 
 \subsection{Linaje desde la fuente hasta el consumo}
 Un indicador o una señal debe poder rastrearse hasta su evento o lote, la transformación aplicada y la versión de regla o modelo. Se conserva la correspondencia entre fuente y entidad del escenario. El linaje lógico se diseña desde el inicio y la evidencia automática se incorpora con los pipelines. Una flecha en el diagrama expresa una relación prevista, no prueba que el linaje técnico ya esté implementado.
@@ -964,19 +965,25 @@ Un indicador o una señal debe poder rastrearse hasta su evento o lote, la trans
 \Vinetta{v05_calidad_y_origen.png}{Las reglas cubren completitud, tipo, rango, unidad, unicidad, frescura y referencia válida. Se concilian entradas con válidos, duplicados y rechazados usando categorías excluyentes definidas para cada conteo. Un incumplimiento conserva causa y origen y puede impedir publicar un período o activar una señal. Los umbrales se acuerdan con el uso del dato y se revisan con los usuarios.}
 
 \subsection{Identidades, permisos y mínimo privilegio}
+La arquitectura separa identidades humanas de aprovisionamiento, cuentas de ejecución de cargas y agentes de servicio administrados por Google. Las cuentas de ejecución no requieren claves descargables: los servicios de GCP las asocian al recurso que ejecutan y obtienen credenciales de corta duración. La tabla resume la configuración de la implementación y los ajustes recomendados para los procesos que aún comparten la cuenta predeterminada de Compute Engine.
 \begin{table}[H]
-\caption{Separación funcional de accesos}\label{tab:iam}
-\small\begin{tabularx}{\linewidth}{@{}P{.24\linewidth}YY@{}}\toprule
-Identidad & Acceso necesario & Límite\\\midrule
-Aprovisionamiento & Crear y configurar recursos catalogados & No utilizarla como identidad de los jobs.\\
-Ejecución Dataflow & Leer entradas y escribir en destinos de su función & Evitar permisos globales de Editor o administración total.\\
-Consumo & Consultar productos autorizados & No otorgar acceso general a Bronze o información sensible.\\\bottomrule
+\caption{Identidades de ejecución y alcance de permisos IAM}\label{tab:iam}
+\small\begin{tabularx}{\linewidth}{@{}P{.22\linewidth}P{.25\linewidth}YY@{}}\toprule
+Proceso & Identidad configurada & Permisos y alcance & Criterio de gobierno\\\midrule
+Dataflow & Cuenta dedicada \texttt{\${PREFIX}-worker} & Dataflow Worker en el proyecto y acceso de objetos en los buckets de artefactos y Silver. & Conservar el acceso limitado a los buckets requeridos; no asignar Editor.\\
+API en Cloud Run & Cuenta dedicada \texttt{\${PREFIX}-api} & BigQuery Job User en el proyecto, lectura de tablas Gold autorizadas y acceso al secreto requerido. & Mantener la lectura a nivel de tabla y el secreto asociado a esta identidad.\\
+Workflows batch & Cuenta predeterminada de Compute Engine & BigQuery Job User en el proyecto; lectura de Bronze y edición de Silver y Gold a nivel de dataset. & Recomendación: asignar una cuenta dedicada al Workflow y limitar sus permisos a las operaciones de orquestación y datasets que necesita.\\
+Actualización programada del Operational Mart & Cuenta predeterminada de Compute Engine, compartida con Workflows & BigQuery Job User en el proyecto y acceso a Silver y Gold para ejecutar la consulta programada. & Recomendación: usar una cuenta dedicada al proceso programado, separada de Workflows y con acceso solo a los datasets requeridos.\\
+Construcción de la API & Cuenta predeterminada de Compute Engine del proyecto & Cloud Run Builder en el proyecto y Artifact Registry Writer en el repositorio de despliegue. & Es una identidad de construcción, distinta de la identidad de runtime de Cloud Run.\\
+Dataproc (opcional) & Cuenta dedicada \texttt{\${PREFIX}-spark} & Dataproc Worker y acceso a los buckets configurados para el proceso. & Aplicar solo si se habilita este componente opcional.\\\bottomrule
 \end{tabularx}
 \end{table}
-Los permisos concretos se asignan al recurso y a la operación necesaria y se verifican mediante pruebas positivas y negativas. La propagación y los agentes gestionados se revisarán durante el bootstrap sin confundirlos con las cuentas de ejecución.
+En Workflows y en la actualización programada, la implementación actual reutiliza la cuenta predeterminada de Compute Engine. La separación propuesta por proceso reduce el impacto de una credencial comprometida y permite revisar o revocar permisos sin afectar a otras cargas. BigQuery Job User habilita la creación de trabajos en el proyecto; los permisos sobre datos se limitan por dataset o tabla. La cuenta humana que despliega puede recibir \texttt{Service Account User} únicamente sobre la cuenta de ejecución correspondiente, sin convertirla en identidad de runtime.
+
+Los agentes de servicio de Pub/Sub, Dataflow, \KnowledgeCatalog{} y otros servicios administrados cumplen funciones propias del plano de control y no reemplazan las cuentas de ejecución de las cargas. Sus permisos deben limitarse al recurso que requiere la integración. La revisión IAM debe confirmar tanto los accesos permitidos como los denegados, evitar roles amplios como Editor y mantener trazabilidad de cambios y asignaciones.
 
 \subsection{Cifrado y protección de datos sensibles}
-Se propone cifrado gestionado inicialmente, ausencia de acceso público y separación de secretos y código. Se evita PII real en pruebas. Cuando una finalidad requiera identificar personas, se define acceso y se considera enmascaramiento o tokenización; Gold publica solo lo necesario. El cifrado no sustituye mínimo privilegio, minimización ni revisión de campos expuestos.
+La implementación habilita Sensitive Data Protection y mantiene una plantilla regional de inspección con detectores para correo electrónico, teléfono y tarjeta; la configuración evita incluir fragmentos del contenido en los resultados. Esta plantilla se ha verificado mediante una solicitud de inspección de contenido, pero todavía no se ejecutan trabajos de inspección sobre tablas o datasets almacenados en BigQuery. Como siguiente medida de gobierno, se recomienda seleccionar los conjuntos que requieren revisión, ejecutar inspecciones periódicas y registrar en \KnowledgeCatalog{} la clasificación aprobada para tablas y columnas. A partir de los hallazgos y la finalidad de uso, se definirán las transformaciones de enmascaramiento o tokenización necesarias antes de publicar los datos en Gold. La inspección identifica posibles datos sensibles; la política de acceso y las transformaciones siguen siendo controles separados.
 
 \subsection{Auditoría y trazabilidad}
 Los logs deben identificar proceso, ejecución, causa de error y entidad técnica sin volcar payload sensible. Las métricas cubren frescura, errores, backlog y oportunidad. La cobertura de auditoría de acceso a datos debe verificarse y habilitarse; la existencia de logs operativos no demuestra auditoría completa. Los cambios relevantes de esquema, permisos y reglas quedan versionados.

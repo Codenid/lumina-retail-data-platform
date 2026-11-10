@@ -732,10 +732,10 @@ Las respuestas y los errores se derivan de soluciones/\allowbreak{}api-insights/
 \textbf{Dominio} & \textbf{Componentes previstos/\allowbreak{}documentados} & \textbf{Evidencia que acredita} \\
 \midrule
 \endhead
-Gobierno & Dataplex y Data Lineage & activos y relaciones entre fuentes y vistas \\
+Gobierno & \href{https://console.cloud.google.com/dataplex/studio?referrer=search\&authuser=0\&project=prj-codenid}{Knowledge Catalog} y Data Lineage & metadatos Bronze/Silver/Gold y relaciones Gold→vista verificadas \\
 Identidades & IAM por servicio & permisos mínimos worker, workflow y API \\
 Cifrado & KMS y Secret Manager & claves, secreto protegido y referencias sin revelar valores \\
-Protección & plantilla DLP regional & configuración de detectores EMAIL, PHONE, CARD \\
+Protección & plantilla regional de Sensitive Data Protection & detectores EMAIL, PHONE y CARD definidos \\
 Auditoría & Logging sink y BigQuery Audit Store & registro de prueba consultable \\
 Observabilidad & Monitoring, alertas y SLO & métrica, política, objetivo y estado \\
 \bottomrule

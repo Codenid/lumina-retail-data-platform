@@ -399,10 +399,10 @@ Las respuestas y los errores se derivan de `soluciones/api-insights/main.py`; el
 
 | Dominio | Componentes previstos/documentados | Evidencia que acredita |
 |---|---|---|
-| Gobierno | Dataplex y Data Lineage | activos y relaciones entre fuentes y vistas |
+| Gobierno | [Knowledge Catalog](https://console.cloud.google.com/dataplex/studio?referrer=search&authuser=0&project=prj-codenid) y Data Lineage | metadatos Bronze/Silver/Gold y relaciones Gold→vista verificadas |
 | Identidades | IAM por servicio | permisos mínimos worker, workflow y API |
 | Cifrado | KMS y Secret Manager | claves, secreto protegido y referencias sin revelar valores |
-| Protección | plantilla DLP regional | configuración de detectores EMAIL, PHONE, CARD |
+| Protección | plantilla regional de Sensitive Data Protection | detectores EMAIL, PHONE y CARD definidos |
 | Auditoría | Logging sink y BigQuery Audit Store | registro de prueba consultable |
 | Observabilidad | Monitoring, alertas y SLO | métrica, política, objetivo y estado |
 
