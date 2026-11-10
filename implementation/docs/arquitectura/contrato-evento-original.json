@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "simulation_id": "sim-20261103-001",
+  "scenario_id": "black-friday",
+  "producer_id": "channel-apps",
+  "event_type": "order_created",
+  "event_id": "evt-000001",
+  "occurred_at": "2026-11-03T10:00:00Z",
+  "emitted_at": "2026-11-03T10:00:01Z",
+  "trace_id": "trace-order-000001",
+  "payload": {"order_id": "ORD-000001", "customer_id": "CUS-000001", "store_id": "STORE-001", "product_id": "SKU-0001", "quantity": 2}
+}

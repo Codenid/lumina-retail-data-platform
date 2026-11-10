@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS `{{PROJECT_ID}}.{{GOLD_DATASET}}.cu01_riesgo_quiebre_despacho` (scenario_id STRING, sku_id STRING, store_id STRING, risk_score FLOAT64, available_qty INT64, recommended_action STRING, as_of TIMESTAMP);
+CREATE TABLE IF NOT EXISTS `{{PROJECT_ID}}.{{GOLD_DATASET}}.cu02_plan_reposicion` (scenario_id STRING, sku_id STRING, warehouse_id STRING, plan_date DATE, forecast_qty INT64, recommended_qty INT64, priority STRING);
+CREATE TABLE IF NOT EXISTS `{{PROJECT_ID}}.{{GOLD_DATASET}}.cu03_kpis_operativos` (scenario_id STRING, period_date DATE, channel STRING, orders INT64, units INT64, conversion_rate FLOAT64, delivery_cost NUMERIC, sla_rate FLOAT64);
+CREATE TABLE IF NOT EXISTS `{{PROJECT_ID}}.{{GOLD_DATASET}}.cu04_alertas_mantenimiento` (scenario_id STRING, asset_id STRING, sensor_id STRING, warehouse_id STRING, anomaly_type STRING, severity STRING, metric_value FLOAT64, occurred_at TIMESTAMP);

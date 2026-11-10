@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "target": "{{PROJECT_ID}}.{{GOLD_DATASET}}.operational_mart",
+  "location": "{{DATASET_LOCATION}}",
+  "schedule": "every 6 hours",
+  "service_account": "{{WORKFLOW_SA}}",
+  "merge_key": ["entity_type", "entity_id", "ingestion_mode", "source_domain"],
+  "sources": {
+    "pedidos": {"table": "{{PROJECT_ID}}.{{SILVER_DATASET}}.pedidos", "entity_type": "ORDER", "mode": "batch"},
+    "inventario": {"table": "{{PROJECT_ID}}.{{SILVER_DATASET}}.inventario", "entity_type": "INVENTORY", "mode": "batch"},
+    "entregas": {"table": "{{PROJECT_ID}}.{{SILVER_DATASET}}.entregas", "entity_type": "DELIVERY", "mode": "batch"},
+    "benchmark_competidores": {"table": "{{PROJECT_ID}}.{{SILVER_DATASET}}.benchmark_competidores", "entity_type": "COMPETITOR_PRICE", "mode": "batch"},
+    "eventos_locales": {"table": "{{PROJECT_ID}}.{{SILVER_DATASET}}.eventos_locales", "entity_type": "LOCAL_EVENT", "mode": "batch"},
+    "redes_sociales": {"table": "{{PROJECT_ID}}.{{SILVER_DATASET}}.redes_sociales", "entity_type": "SOCIAL_POST", "mode": "batch"},
+    "insights_streaming": {"table": "{{PROJECT_ID}}.{{GOLD_DATASET}}.insights_streaming", "entity_type": "INSIGHT", "mode": "streaming"},
+    "procesamiento_auditoria": {"table": "{{PROJECT_ID}}.{{GOLD_DATASET}}.procesamiento_auditoria", "entity_type": "AUDIT", "mode": "streaming"}
+  }
+}

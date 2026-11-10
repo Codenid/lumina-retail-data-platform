@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "archimate_id": "id-296ccb2b09fe45ae94d44b36120e3e3e",
+  "service": "{{PREFIX}}-insights-api",
+  "region": "{{REGION}}",
+  "authentication": "Cloud Run IAM; private",
+  "runtime_identity": "{{PREFIX}}-api@{{PROJECT_ID}}.iam.gserviceaccount.com",
+  "limits": {
+    "default_rows": 25,
+    "maximum_rows": 100,
+    "maximum_bytes_billed": 52428800,
+    "minimum_instances": 0,
+    "maximum_instances": 2
+  },
+  "routes": {
+    "/api/v1/insights": {
+      "description": "Insights streaming y riesgos de quiebre CU01",
+      "tables": {
+        "streaming_insights": {
+          "table": "insights_streaming",
+          "columns": ["insight_id", "event_id", "insight_type", "sku_id", "store_id", "score", "created_at", "status"],
+          "order_by": "created_at DESC"
+        },
+        "stockout_risks": {
+          "table": "cu01_riesgo_quiebre_despacho",
+          "columns": ["scenario_id", "sku_id", "store_id", "risk_score", "available_qty", "recommended_action", "as_of"],
+          "order_by": "as_of DESC",
+          "scenario_filter": true
+        }
+      }
+    },
+    "/api/v1/kpis": {
+      "description": "KPIs operativos CU03",
+      "table": "cu03_kpis_operativos",
+      "columns": ["scenario_id", "period_date", "channel", "orders", "units", "conversion_rate", "delivery_cost", "sla_rate"],
+      "order_by": "period_date DESC",
+      "scenario_filter": true
+    },
+    "/api/v1/inventory-plans": {
+      "description": "Planes de reposición CU02",
+      "table": "cu02_plan_reposicion",
+      "columns": ["scenario_id", "sku_id", "warehouse_id", "plan_date", "forecast_qty", "recommended_qty", "priority"],
+      "order_by": "plan_date DESC, priority, sku_id",
+      "scenario_filter": true
+    },
+    "/api/v1/maintenance-risks": {
+      "description": "Alertas y riesgo de mantenimiento CU04",
+      "table": "cu04_alertas_mantenimiento",
+      "columns": ["scenario_id", "asset_id", "sensor_id", "warehouse_id", "anomaly_type", "severity", "metric_value", "occurred_at"],
+      "order_by": "occurred_at DESC",
+      "scenario_filter": true
+    }
+  }
+}
