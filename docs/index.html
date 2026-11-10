@@ -1,61 +1,39 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lumina Retail · Entrega integral</title>
-  <link rel="stylesheet" href="portal.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumina Retail · Plataforma integral</title><link rel="stylesheet" href="portal.css">
 </head>
 <body>
-  <div class="page">
-    <header class="masthead">
-      <a class="brand" href="./">LUMINA <span>RETAIL</span></a>
-      <nav><a href="#vision">Visión</a><a href="#arquitectura">Arquitectura</a><a href="#entrega">Entrega</a></nav>
-      <span class="edition">PROPUESTA INTEGRAL · 2026</span>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="#inicio" data-view="inicio">LUMINA <span>RETAIL</span></a>
+      <nav class="main-nav" aria-label="Navegación principal">
+        <button class="nav-item active" data-view="inicio">Inicio</button>
+        <button class="nav-item" data-view="arquitectura">Arquitectura</button>
+        <button class="nav-item" data-view="simulador">Simulador</button>
+        <button class="nav-item" data-view="costos">Costos</button>
+      </nav>
+      <div class="header-links"><a href="report/Lumina_Retail_Informe.pdf" target="_blank">Informe general ↗</a><a href="https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/docs/informe-tecnico/informe/informe-tecnico-implementacion-gcp.pdf" target="_blank">Implementación ↗</a></div>
     </header>
 
     <main>
-      <section class="hero" id="vision">
-        <div class="hero-copy">
-          <p class="kicker">PLATAFORMA DE DATOS RETAIL</p>
-          <h1>Una vista completa para<br><em>decidir mejor.</em></h1>
-          <p class="lead">Lumina integra las señales del negocio, las convierte en productos de datos y las acerca a las decisiones operativas.</p>
-          <div class="hero-links"><a class="button dark" href="report/Lumina_Retail_Informe.pdf">Leer propuesta completa <span>↗</span></a><a class="text-link" href="#entrega">Explorar los activos <span>↓</span></a></div>
-        </div>
-        <div class="hero-image"><img src="report-resources/figures/portadas/01_resumen_ejecutivo.png" alt="Visión ejecutiva de Lumina Retail"></div>
+      <section class="view active" id="inicio">
+        <div class="welcome"><div><span class="eyebrow">PLATAFORMA DE DATOS RETAIL · ENTREGA INTEGRAL</span><h1>Una vista completa<br><em>para decidir mejor.</em></h1><p>Lumina integra las señales del negocio, las convierte en productos de datos y las acerca a las decisiones operativas.</p></div><img src="report-resources/figures/portadas/01_resumen_ejecutivo.png" alt="Visión ejecutiva de Lumina Retail"></div>
+        <div class="quick-start"><div class="eyebrow">POR DÓNDE EMPEZAR</div><div class="start-grid"><button data-view="arquitectura"><span class="step">01</span><b>Entender la arquitectura</b><small>Componentes e integración</small><i>→</i></button><button data-view="simulador"><span class="step">02</span><b>Seguir un dato</b><small>Recorrido streaming o batch</small><i>→</i></button><button data-view="costos"><span class="step">03</span><b>Revisar el costeo</b><small>Servicios, capacidad y escenarios</small><i>→</i></button></div></div>
+        <div class="deliverables"><div class="eyebrow">ENTREGABLES FORMALES</div><div class="deliverable-links"><a href="report/Lumina_Retail_Informe.pdf" target="_blank"><span>01</span><b>Informe general</b><small>Visión, contexto y propuesta</small><strong>PDF ↗</strong></a><a href="https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/docs/informe-tecnico/informe/informe-tecnico-implementacion-gcp.pdf" target="_blank"><span>02</span><b>Informe de implementación</b><small>Validaciones y evidencia GCP</small><strong>PDF ↗</strong></a></div></div>
       </section>
 
-      <section class="statement"><span class="number">01</span><p>De fuentes fragmentadas a una visión confiable de inventario, pedidos, logística, clientes y telemetría.</p><span class="rule"></span></section>
+      <section class="view" id="arquitectura"><div class="view-heading"><div><span class="eyebrow">01 · VISOR DE ARQUITECTURA</span><h2>Componentes e integración</h2><p>El mapa principal de la solución y las vistas ArchiMate que explican su evolución.</p></div><a class="pdf-link" href="report-resources/figures/arquitectura/09_arquitectura_red_overview.pdf" target="_blank">Abrir PDF ↗</a></div><div class="main-diagram"><img src="report-resources/figures/arquitectura/09_arquitectura_red_overview.svg" alt="Diagrama principal de componentes e integración"></div><div class="diagram-grid"><a href="report-resources/figures/arquitectura/01_contextual_asis.pdf" target="_blank"><b>01</b><span><strong>Contexto actual</strong><small>Relación con el entorno empresarial</small></span><i>↗</i></a><a href="report-resources/figures/arquitectura/02_contextual_tobe.pdf" target="_blank"><b>02</b><span><strong>Contexto propuesto</strong><small>Alcance futuro de la plataforma</small></span><i>↗</i></a><a href="report-resources/figures/arquitectura/03_pedidos_asis.pdf" target="_blank"><b>03</b><span><strong>Pedidos actual</strong><small>Recorrido operativo vigente</small></span><i>↗</i></a><a href="report-resources/figures/arquitectura/04_pedidos_tobe.pdf" target="_blank"><b>04</b><span><strong>Pedidos propuesto</strong><small>Proceso mejorado con datos</small></span><i>↗</i></a><a href="report-resources/figures/arquitectura/05_aplicaciones_procesos_asis.pdf" target="_blank"><b>05</b><span><strong>Aplicaciones actual</strong><small>Sistemas y procesos existentes</small></span><i>↗</i></a><a href="report-resources/figures/arquitectura/06_aplicaciones_procesos_tobe.pdf" target="_blank"><b>06</b><span><strong>Aplicaciones propuesto</strong><small>Integración de capacidades</small></span><i>↗</i></a><a href="report-resources/figures/arquitectura/07_integracion_macro_tobe.pdf" target="_blank"><b>07</b><span><strong>Integración macro</strong><small>Conexión de dominios de datos</small></span><i>↗</i></a></div></section>
 
-      <section class="architecture" id="arquitectura">
-        <div class="section-label"><span>02</span><span>La solución</span></div>
-        <div class="section-intro"><h2>La arquitectura,<br><em>en contexto.</em></h2><p>Explora cómo se conectan los canales operativos, la ingesta, el procesamiento y los productos de datos.</p></div>
-        <a class="architecture-card" href="arquitectura/"><img src="report-resources/figures/arquitectura/09_arquitectura_red_overview.svg" alt="Diagrama general de arquitectura de red"><span>Entrar al visor de arquitectura <b>↗</b></span></a>
-      </section>
-
-      <section class="journey" id="entrega">
-        <div class="section-label"><span>03</span><span>El recorrido</span></div>
-        <div class="section-intro"><h2>Todo lo creado,<br><em>en un solo lugar.</em></h2><p>Empieza con una vista ejecutiva y entra al nivel de detalle que necesites.</p></div>
-        <div class="cards">
-          <a class="card card-feature" href="simulador/"><div class="card-top"><span class="tag blue">EXPERIENCIA</span><span class="arrow">↗</span></div><h3>Simulador<br>end-to-end</h3><p>Observa cómo un evento avanza desde el origen hasta el producto final.</p><div class="card-art flow-art"><i></i><i></i><i></i><i></i><b>ORIGEN → DATOS → DECISIÓN</b></div></a>
-          <a class="card" href="costos/"><div class="card-top"><span class="tag">MODELO ECONÓMICO</span><span class="arrow">↗</span></div><h3>Costeo de<br>arquitectura</h3><p>Servicios, capacidades, escenarios y costo mensual de la solución.</p><div class="metric"><strong>GCP</strong><span>Modelo de planificación</span></div></a>
-          <a class="card" href="report/Lumina_Retail_Informe.pdf"><div class="card-top"><span class="tag">PROPUESTA</span><span class="arrow">↗</span></div><h3>Informe<br>general</h3><p>La visión, el contexto y las decisiones que sostienen la propuesta.</p><div class="metric"><strong>01</strong><span>Documento ejecutivo</span></div></a>
-          <a class="card" href="https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/docs/informe-tecnico/informe/informe-tecnico-implementacion-gcp.pdf"><div class="card-top"><span class="tag">EVIDENCIA</span><span class="arrow">↗</span></div><h3>Informe de<br>implementación</h3><p>Recorrido técnico, validaciones y evidencia de la plataforma construida.</p><div class="metric"><strong>GCP</strong><span>Implementación reproducible</span></div></a>
-        </div>
-      </section>
-
-      <section class="library">
-        <div class="section-label"><span>04</span><span>Biblioteca de trabajo</span></div>
-        <div class="library-grid">
-          <a href="https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/README.md"><span class="lib-icon">↳</span><span><b>Implementación</b><small>Guía de entrada y mapa del proyecto</small></span><strong>↗</strong></a>
-          <a href="https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/docs/arquitectura/README.md"><span class="lib-icon">◇</span><span><b>Arquitectura y trazabilidad</b><small>Componentes, contratos y relación con GCP</small></span><strong>↗</strong></a>
-          <a href="https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/automatizacion"><span class="lib-icon">⌘</span><span><b>Automatización y runbooks</b><small>Secuencias operativas y validaciones</small></span><strong>↗</strong></a>
-          <a href="arquitectura/"><span class="lib-icon">□</span><span><b>Modelo canónico</b><small>Fuente de arquitectura y exportaciones</small></span><strong>↗</strong></a>
-        </div>
-      </section>
+      <section class="view embedded" id="simulador"><div class="embed-heading"><div><span class="eyebrow">02 · SIMULADOR END-TO-END</span><h2>Observa cómo fluye un dato</h2></div><button data-view="inicio">← Volver al inicio</button></div><iframe src="simulador/index.html" title="Simulador end-to-end"></iframe></section>
+      <section class="view embedded" id="costos"><div class="embed-heading"><div><span class="eyebrow">03 · MODELO ECONÓMICO</span><h2>Costeo de arquitectura</h2></div><button data-view="inicio">← Volver al inicio</button></div><iframe src="costos/index.html" title="Calculadora de costos GCP"></iframe></section>
     </main>
-
-    <footer><span>LUMINA RETAIL / FINOPS · GCP</span><span>Entrega integral de arquitectura y plataforma de datos</span></footer>
+    <footer><span>LUMINA RETAIL / FINOPS · GCP</span><span>Portal integral de arquitectura y plataforma de datos</span></footer>
   </div>
-</body>
-</html>
+  <script>
+    const views=[...document.querySelectorAll('.view')];
+    function show(id){views.forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===id));history.replaceState(null,'','#'+id);window.scrollTo({top:0,behavior:'smooth'})}
+    document.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b){e.preventDefault();show(b.dataset.view)}});show(location.hash.slice(1)||'inicio');
+  </script>
+</body></html>
