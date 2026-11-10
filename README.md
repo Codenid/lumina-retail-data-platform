@@ -1,7 +1,7 @@
 # Lumina Retail
 ### Anticipar la demanda. Optimizar el inventario. Acelerar la entrega.
 
-[Explorar los diagramas](#guía-de-arquitectura) · [Resumen ejecutivo](#resumen-ejecutivo) · [Informe completo](docs/report/Lumina_Retail_Informe.pdf)
+[Explorar los diagramas](#guía-de-arquitectura) · [Resumen ejecutivo](#resumen-ejecutivo) · [Informe completo](docs/report/Lumina_Retail_Informe.pdf) · [Implementación GCP](#implementación-gcp)
 
 ## Resumen ejecutivo
 
@@ -18,6 +18,16 @@ La implementación propuesta prioriza un recorrido completo de inventario y pedi
 ## Informe del proyecto
 
 Consulta el [informe completo](docs/report/Lumina_Retail_Informe.pdf), que presenta la arquitectura de datos de Lumina Retail, sus componentes, flujos de integración y decisiones de diseño en Google Cloud.
+
+## Implementación GCP
+
+La implementación reproducible de la plataforma se encuentra en [`implementation/`](implementation/). Incluye automatización de recursos GCP, procesamiento streaming y batch, soluciones desplegables, pruebas y evidencias.
+
+- [Guía de implementación](implementation/README.md)
+- [Informe técnico de implementación](implementation/docs/informe-tecnico/informe/informe-tecnico-implementacion-gcp.pdf)
+- [Automatización y runbooks](implementation/automatizacion/)
+- [Soluciones de procesamiento y API](implementation/soluciones/)
+- [Pruebas](implementation/tests/)
 
 ## Guía de arquitectura
 
