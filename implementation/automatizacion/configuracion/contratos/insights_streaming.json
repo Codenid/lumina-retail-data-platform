@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "insights_table": "insights_streaming",
+  "audit_table": "procesamiento_auditoria",
+  "insight_key": ["insight_id"],
+  "insight_fields": ["insight_id", "event_id", "insight_type", "sku_id", "store_id", "score", "created_at", "status"],
+  "audit_fields": ["audit_id", "event_id", "component", "status", "observed_at", "detail"]
+}

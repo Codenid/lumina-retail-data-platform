@@ -1,0 +1,9 @@
+{
+  "project": "{{PROJECT_ID}}",
+  "region": "{{REGION}}",
+  "archimate_id": "id-91fc8e972e2e420e8a86c3afc6a260c8",
+  "apis": ["logging.googleapis.com", "monitoring.googleapis.com"],
+  "audit_store": {"dataset": "{{PREFIX}}_audit", "sink": "{{PREFIX}}-audit-sink", "log_id": "{{PREFIX}}_demo_audit"},
+  "metric": {"id": "{{PREFIX}}_api_errors", "display_name": "{{PREFIX}} API errors", "alert_display_name": "{{PREFIX}} API error rate alert"},
+  "service_monitoring": {"service_id": "{{PREFIX}}-insights-api", "service_name": "{{PREFIX}}-insights-api", "slo_id": "{{PREFIX}}-availability-99", "goal": 0.99, "rolling_period": "86400s"}
+}

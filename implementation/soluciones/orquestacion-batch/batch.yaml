@@ -1,0 +1,46 @@
+main:
+  params: [args]
+  steps:
+    - initialize:
+        assign:
+          - project: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - dataset: ${default(args.dataset, "{{PREFIX}}_gold")}
+          - run_id: ${default(args.run_id, "demo001")}
+          - silver_prefix: "MERGE `{{PROJECT_ID}}.{{PREFIX}}_silver.pedidos` T USING (SELECT JSON_VALUE(payload_json,'$.order_id') order_id, JSON_VALUE(payload_json,'$.order_line_id') order_line_id, JSON_VALUE(payload_json,'$.customer_id') customer_id, JSON_VALUE(payload_json,'$.store_id') store_id, JSON_VALUE(payload_json,'$.warehouse_id') warehouse_id, JSON_VALUE(payload_json,'$.sku_id') sku_id, SAFE_CAST(JSON_VALUE(payload_json,'$.quantity') AS INT64) quantity, effective_at occurred_at, IF(is_valid,'VALID','INVALID') quality_status FROM `{{PROJECT_ID}}.{{PREFIX}}_bronze.pedidos_raw` WHERE batch_id='"
+          - silver_suffix: "') S ON T.order_id=S.order_id AND COALESCE(T.order_line_id,'')=COALESCE(S.order_line_id,'') WHEN NOT MATCHED THEN INSERT ROW"
+    - bronze_to_silver:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${project}
+          body:
+            useLegacySql: false
+            query: ${silver_prefix + run_id + silver_suffix}
+    - gold_cu03:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${project}
+          body:
+            useLegacySql: false
+            query: ${"DELETE FROM `{{PROJECT_ID}}.{{PREFIX}}_gold.cu03_kpis_operativos` WHERE scenario_id='" + run_id + "'; INSERT INTO `{{PROJECT_ID}}.{{PREFIX}}_gold.cu03_kpis_operativos` SELECT '" + run_id + "', CURRENT_DATE(), 'all', COUNT(DISTINCT order_id), SUM(quantity), 1.0, 0, 0 FROM `{{PROJECT_ID}}.{{PREFIX}}_silver.pedidos` WHERE quality_status='VALID'"}
+    - materialize_mart:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${project}
+          body:
+            useLegacySql: false
+            query: ${"DELETE FROM `{{PROJECT_ID}}.{{PREFIX}}_gold.operational_mart` WHERE scenario_id='" + run_id + "'; INSERT INTO `{{PROJECT_ID}}.{{PREFIX}}_gold.operational_mart` SELECT '" + run_id + "','ORDER',order_id,sku_id,store_id,warehouse_id,quantity,quality_status,occurred_at,'workflow_batch' FROM `{{PROJECT_ID}}.{{PREFIX}}_silver.pedidos` WHERE quality_status='VALID'"}
+    - verify_gold_tables:
+        call: googleapis.bigquery.v2.jobs.query
+        args:
+          projectId: ${project}
+          body:
+            useLegacySql: false
+            maximumBytesBilled: "31457280"
+            query: ${"SELECT COUNT(*) AS filas FROM `" + project + "." + dataset + ".operational_mart` WHERE scenario_id = '" + run_id + "'"}
+        result: verification
+    - return_result:
+        return:
+          workflow: "retailsmart-batch"
+          run_id: ${run_id}
+          dataset: ${dataset}
+          verification: ${verification}
