@@ -39,8 +39,8 @@ Recorre la arquitectura desde la visión del negocio hasta sus componentes. En c
 | Atención de pedidos | El recorrido del pedido y el apoyo de la inteligencia de datos. | [Ver proceso actual](docs/report-resources/figures/arquitectura/03_pedidos_asis.pdf) | [Ver proceso propuesto](docs/report-resources/figures/arquitectura/04_pedidos_tobe.pdf) |
 | Aplicaciones y procesos | Cómo se relacionan los sistemas con las actividades del negocio. | [Ver aplicaciones actuales](docs/report-resources/figures/arquitectura/05_aplicaciones_procesos_asis.pdf) | [Ver aplicaciones propuestas](docs/report-resources/figures/arquitectura/06_aplicaciones_procesos_tobe.pdf) |
 
-Para profundizar en la solución, consulta la [vista general de integración](docs/report-resources/figures/arquitectura/07_integracion_macro_tobe.pdf) y después el [detalle de componentes y flujos](docs/report-resources/figures/arquitectura/08_integracion_detallada_tobe.svg) ([versión PDF](docs/report-resources/figures/arquitectura/08_integracion_detallada_tobe.pdf)).
+El modelo vigente de arquitectura se mantiene en [`docs/architecture`](docs/architecture/README.md). Puedes revisar la [exportación PDF](docs/architecture/generated/arquitectura-archimate.pdf) o la [versión SVG](docs/architecture/generated/arquitectura-archimate.svg), ambas derivadas del modelo ArchiMate canónico.
 
-### Vista detallada de la solución
+### Modelo vigente de arquitectura
 
-[![Componentes y flujos de integración de la arquitectura propuesta de Lumina Retail](docs/report-resources/figures/arquitectura/08_integracion_detallada_tobe.svg)](docs/report-resources/figures/arquitectura/08_integracion_detallada_tobe.svg)
+[![Modelo vigente de arquitectura de solución de Lumina Retail](docs/architecture/generated/arquitectura-archimate.svg)](docs/architecture/generated/arquitectura-archimate.svg)

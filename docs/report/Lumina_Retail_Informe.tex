@@ -451,6 +451,15 @@ La figura~\ref{fig:arquitectura-vector} resume el flujo sin sustituir las vistas
 \Fuente{síntesis propia alineada con el modelo de solución~\cite{modelo-solucion}}
 \end{figure}
 
+\clearpage
+\subsection{Topología de red y conectividad}
+La vista presenta la VPC de procesamiento, la subred regional con acceso privado a Google y la ubicación de los servicios respecto de la red.
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth,height=9cm,keepaspectratio]{09_arquitectura_red_overview.pdf}
+\caption{Vista de red de la arquitectura objetivo de Lumina Retail.}\label{fig:red-gcp}
+\end{figure}
+
 \subsection{Trazabilidad entre elementos, componentes y requisitos}
 La trazabilidad sigue la secuencia problema, capacidad, componente, dato y validación. Por ejemplo, baja visibilidad de stock se vincula a disponibilidad por SKU y ubicación, a ingesta de \ID{stock\_event}, a curación y a una señal verificable. El catálogo de recursos preserva el identificador lógico y el nombre físico. Las matrices anexas permiten seguir la relación entre fuentes, componentes y resultados.
 
@@ -1144,7 +1153,7 @@ Las siguientes láminas representan vistas del modelo de solución y permiten re
 \LuminaDetalleBegin
 \thispagestyle{empty}
 \begin{center}
-{\Large\bfseries Integración detallada de la solución\par}
+{\Large\bfseries Modelo vigente de arquitectura de la solución\par}
 \vspace{5mm}
 \begin{figure}[H]
 \centering
@@ -1152,9 +1161,9 @@ Las siguientes láminas representan vistas del modelo de solución y permiten re
   width=\linewidth,
   height=165mm,
   keepaspectratio
-]{08_integracion_detallada_tobe.pdf}
-\caption{Vista detallada de componentes e integración}\label{fig:integracion-detallada}
-\Fuente{Modelo de solución elaborado por el equipo~\cite{modelo-solucion}}
+]{../architecture/generated/arquitectura-archimate.pdf}
+\caption{Modelo vigente de arquitectura de solución, exportado desde el archivo ArchiMate canónico.}\label{fig:integracion-detallada}
+\Fuente{Modelo canónico de arquitectura del proyecto}
 \end{figure}
 \end{center}
 \LuminaDetalleRestore

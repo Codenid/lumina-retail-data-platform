@@ -18,6 +18,17 @@ interna descrita en ArchiMate. El inventario de origen se conserva en
 | Seguridad | IAM mínimo, KMS, Secret Manager con CMEK y plantilla DLP. |
 | Observabilidad | Audit Store, sink de Logging, métrica, alerta y SLO del servicio API. |
 
+## Topología de red objetivo
+
+La arquitectura objetivo contempla VPC de modo personalizado, subredes
+regionales privadas, cargas distribuidas entre zonas, acceso controlado a APIs
+de Google y salida de red según necesidad. Dataflow utiliza workers en la
+subred; Cloud Run puede conectarse mediante Direct VPC egress si requiere
+recursos privados. La estrategia de recuperación contempla una región
+secundaria y datos replicados o respaldados. CIDR, RTO y RPO quedan pendientes
+de dimensionamiento. Esta topología es una propuesta arquitectónica y no una
+declaración de recursos de red ya desplegados por los scripts.
+
 ## Límites deliberados
 
 - Los productores y datos son sintéticos. Conectar productores externos reales,
