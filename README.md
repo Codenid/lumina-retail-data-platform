@@ -3,6 +3,8 @@
 
 [Portal de entrega](docs/index.html) · [Informe completo](docs/report/Lumina_Retail_Informe.pdf) · [Informe de implementación](implementation/docs/informe-tecnico/informe/informe-tecnico-implementacion-gcp.pdf) · [Web de costos](docs/costos/index.html) · [Arquitectura](#arquitectura) · [Implementación](#implementación) · [Documentación](#documentación)
 
+### [Abrir portal web público de Lumina Retail ↗](https://codenid.github.io/lumina-retail-data-platform/)
+
 ## Resumen ejecutivo
 
 El proyecto integra ventas, pedidos, inventario, logística, clientes y
