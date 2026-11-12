@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lumina · Control de productores</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/">LUMINA <span>RETAIL</span></a>
+      <div class="top-right"><div class="connection"><i id="connection-dot"></i><span id="connection-label">Conectando…</span></div><span class="project" id="project-name">—</span><span class="region" id="region-name">—</span></div>
+    </header>
+
+    <section class="hero">
+      <div><span class="eyebrow">CENTRO DE EJECUCIÓN · GCP</span><h1>Productores de datos</h1><p>Selecciona quién envía, define el ritmo y ejecuta el flujo de extremo a extremo. Genera datos sintéticos siguiendo los contratos vigentes.</p></div>
+      <div class="hero-topic"><small>DESTINO STREAMING</small><b id="topic-name">Pub/Sub · —</b><small>Los datos sintéticos respetan los contratos de entrada.</small></div>
+    </section>
+
+    <nav class="mode-switch" aria-label="Modo de carga">
+      <button class="mode active" data-mode="streaming"><span class="mode-index">01</span><span><b>Streaming</b><small>Eventos continuos · Pub/Sub</small></span><span class="mode-count" id="stream-count">6 productores</span></button>
+      <button class="mode" data-mode="batch"><span class="mode-index">02</span><span><b>Batch</b><small>Archivos periódicos · Landing</small></span><span class="mode-count" id="batch-count">6 productores</span></button>
+    </nav>
+
+    <section class="control-layout">
+      <div class="producer-column">
+        <div class="section-head"><div><span class="eyebrow">01 / ORIGEN</span><h2>¿Quién produce?</h2></div><button id="toggle-all" class="text-button">Quitar selección</button></div>
+        <div id="producer-list" class="producer-list"></div>
+      </div>
+
+      <aside class="settings-card">
+        <div class="section-head"><div><span class="eyebrow">02 / CARGA</span><h2>Configura la ejecución</h2></div></div>
+        <div id="stream-settings" class="settings-body">
+          <label class="control-label" for="stream-rate">Eventos por segundo <span>total entre los productores elegidos</span></label>
+          <div class="choice-row" id="rate-presets">
+            <button data-rate="25">Base <b>25/s</b></button><button class="selected" data-rate="250">Intensa <b>250/s</b></button><button data-rate="1000">Pico <b>1.000/s</b></button>
+          </div>
+          <label class="control-label" for="stream-rate">Tasa personalizada</label><div class="number-wrap"><input id="stream-rate" type="number" min="1" max="10000" value="250"><span>eventos / segundo</span></div>
+          <label class="control-label" for="duration-minutes">Duración</label><div class="number-wrap"><input id="duration-minutes" type="number" min="1" max="60" value="1"><span>minutos</span></div>
+          <div class="flowline"><span>Productores</span><i></i><b>Pub/Sub</b><i></i><span>Dataflow</span><i></i><span>Silver</span></div>
+        </div>
+        <div id="batch-settings" class="settings-body" hidden>
+          <label class="control-label" for="batch-rows">Filas por archivo y productor</label>
+          <div class="choice-row" id="batch-presets"><button data-rows="1000">Ligera <b>1.000</b></button><button class="selected" data-rows="10000">Intensa <b>10.000</b></button><button data-rows="50000">Pico <b>50.000</b></button></div>
+          <label class="control-label" for="batch-rows">Filas personalizadas</label><div class="number-wrap"><input id="batch-rows" type="number" min="1" max="100000" value="10000"><span>filas / archivo</span></div>
+          <label class="control-label" for="batch-interval">Frecuencia de archivos</label><div class="number-wrap"><input id="batch-interval" type="number" min="10" max="3600" value="60"><span>segundos</span></div>
+          <label class="control-label" for="batch-duration">Duración</label><div class="number-wrap"><input id="batch-duration" type="number" min="1" max="60" value="1"><span>minutos</span></div>
+          <div class="flowline"><span>Archivos JSONL</span><i></i><b>Landing</b><i></i><span>Bronze</span><i></i><span>Workflow</span></div>
+        </div>
+        <div class="estimate"><div><small>VOLUMEN ESTIMADO</small><b id="estimate-total">15.000</b></div><span id="estimate-caption">eventos durante la ejecución</span></div>
+        <div class="action-row"><button id="start-run" class="primary">Iniciar ejecución <span>→</span></button><button id="stop-run" class="stop" hidden>Detener</button></div>
+        <p class="limit-note">Límite operativo: 10 millones de registros por ejecución. El volumen efectivo depende de las cuotas y recursos habilitados en GCP.</p>
+      </aside>
+    </section>
+
+    <section id="run-panel" class="run-panel" hidden>
+      <div class="run-title"><div><span class="eyebrow">03 / EJECUCIÓN</span><h2 id="run-heading">Carga activa</h2></div><span id="run-status" class="status-pill">INICIANDO</span></div>
+      <div class="run-metrics"><div><small>GENERADOS</small><b id="run-generated">0</b></div><div><small>CONFIRMADOS / BRONZE</small><b id="run-accepted">0</b></div><div><small>ARCHIVOS</small><b id="run-files">0</b></div><div><small>ERRORES</small><b id="run-failed">0</b></div></div>
+      <div class="progress-track"><i id="run-progress"></i></div><p id="run-detail" class="run-detail">Preparando productores…</p>
+    </section>
+
+    <section class="recent-panel"><div class="section-head"><div><span class="eyebrow">HISTORIAL DE ESTA SESIÓN</span><h2>Ejecuciones recientes</h2></div><span class="session-note">Visible mientras esta instancia siga activa</span></div><div id="run-history" class="run-history"><span class="empty-history">Aún no se han iniciado cargas.</span></div></section>
+    <footer><span>Streaming genera eventos por contrato. Dataflow puede escalar hasta 20 workers según backlog y cuota. Batch genera JSONL en Landing y activa su orquestación.</span><span id="health-detail">Verificando recursos…</span></footer>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
