@@ -24,12 +24,15 @@ cd "$ROOT"
 "$ROOT/.venv/bin/python" "$ROOT/soluciones/procesamiento-streaming/streaming.py" \
  --runner=DataflowRunner --project="$PROJECT_ID" --region="$REGION" --streaming \
  --job_name="$JOB_NAME" --service_account_email="$WORKER" --network="$NETWORK" \
- --num_workers=1 --max_num_workers=1 --autoscaling_algorithm=NONE \
+ --num_workers=2 --max_num_workers=20 --autoscaling_algorithm=THROUGHPUT_BASED \
  --worker_machine_type=e2-standard-2 --disk_size_gb=30 \
  --staging_location="gs://$ARTIFACTS/staging" --temp_location="gs://$ARTIFACTS/temp" \
  --setup_file="$ROOT/soluciones/procesamiento-streaming/setup.py" --requirements_file="$ROOT/soluciones/procesamiento-streaming/requirements.txt" --save_main_session \
  --input_subscription="projects/$PROJECT_ID/subscriptions/$DF_SUB" \
- --silver_table="$PROJECT_ID:$SILVER_DATASET.pedidos" 2>&1 | tee "$ROOT/state/$DEMO_RUN_ID/lanzamiento.log"
+ --silver_table="$PROJECT_ID:$SILVER_DATASET.pedidos" \
+ --silver_inventory_table="$PROJECT_ID:$SILVER_DATASET.inventario" \
+ --silver_delivery_table="$PROJECT_ID:$SILVER_DATASET.entregas" \
+ --silver_telemetry_table="$PROJECT_ID:$SILVER_DATASET.telemetria_activos" 2>&1 | tee "$ROOT/state/$DEMO_RUN_ID/lanzamiento.log"
 sed -n 's/^JOB_ID=//p' "$ROOT/state/$DEMO_RUN_ID/lanzamiento.log" > "$ROOT/state/$DEMO_RUN_ID/job_id.txt"
 [[ -s "$ROOT/state/$DEMO_RUN_ID/job_id.txt" ]] || { echo 'No se capturó ID. Revisa la consola Dataflow antes de repetir.'; exit 1; }
 echo 'Espera RUNNING y revisa el worker en Dataflow > Jobs. Luego ejecuta 08.'
