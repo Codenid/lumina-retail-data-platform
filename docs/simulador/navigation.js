@@ -21,10 +21,10 @@ renderCase=function(){
 
 document.addEventListener('click',e=>{
   const mode=e.target.closest('[data-mode]');
-  if(mode){selectedMode=mode.dataset.mode;pathIndex=0;stepIndex=0;renderCase();return}
+  if(mode){e.stopImmediatePropagation();selectedMode=mode.dataset.mode;pathIndex=0;stepIndex=0;renderCase();return}
   const useCase=e.target.closest('[data-case]');
-  if(useCase){caseIndex=Number(useCase.dataset.case);hasChosenCase=true;stepIndex=0;sampleKey=Object.keys(getCase().samples)[0];renderCase()}
-});
+  if(useCase){e.stopImmediatePropagation();caseIndex=Number(useCase.dataset.case);hasChosenCase=true;stepIndex=0;sampleKey=Object.keys(getCase().samples)[0];renderCase()}
+},true);
 
 // Starts at the simple chooser; the first case remains preselected for a short path to exploration.
 caseIndex=0;
