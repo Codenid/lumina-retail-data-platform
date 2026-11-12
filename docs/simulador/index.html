@@ -1,56 +1,12 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lumina · Simulador end-to-end</title>
-  <link rel="stylesheet" href="styles.css"><style>.site-nav{display:none!important}</style>
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lumina · Explorador end-to-end</title><link rel="stylesheet" href="styles.css"></head>
 <body>
-  <nav class="site-nav"><a href="../">Inicio</a><a href="../arquitectura/">Arquitectura</a><a href="../simulador/">Recorrido</a><a href="../costos/">Costos GCP</a></nav>
   <main class="shell">
-    <header class="topbar">
-      <div>
-        <span class="eyebrow">LUMINA RETAIL / VISUALIZADOR</span>
-        <h1>Así funciona la plataforma</h1>
-        <p>Selecciona un recorrido y observa cómo un dato llega desde la fuente hasta la decisión.</p>
-      </div>
-      <div class="top-actions">
-        <button class="mode active" data-mode="streaming">Streaming</button>
-        <button class="mode" data-mode="batch">Batch</button>
-        <button class="icon-button" id="reset" title="Reiniciar simulación" aria-label="Reiniciar">↺</button>
-      </div>
-    </header>
-
-    <section class="scenario-bar">
-      <div class="scenario-copy"><span class="status-dot"></span><strong id="scenario-title">Pedido en tiempo real</strong><span id="scenario-description">Un evento cruza la plataforma y actualiza el inventario.</span></div>
-      <div class="step-counter"><span id="step-number">01</span><span>/</span><span id="step-total">06</span></div>
-    </section>
-
-    <section class="stage" aria-live="polite">
-      <div class="stage-head"><div><span class="eyebrow" id="stage-kicker">01 · ORIGEN</span><h2 id="stage-title">El negocio produce un evento</h2></div><span class="stage-time" id="stage-time">t+0 ms</span></div>
-      <div class="stage-grid">
-        <div class="stage-visual" id="stage-visual"></div>
-        <div class="stage-explain"><p id="stage-text"></p><div class="payload" id="payload"></div></div>
-      </div>
-    </section>
-
-    <section class="flow-wrap">
-      <div class="flow-line"></div>
-      <div class="flow-nodes" id="flow-nodes"></div>
-    </section>
-
-    <nav class="controls" aria-label="Controles de simulación">
-      <button class="control secondary" id="back">← Atrás</button>
-      <button class="control primary" id="next">Siguiente <span>→</span></button>
-      <button class="control ghost" id="play">▶ Reproducir recorrido</button>
-    </nav>
-
-    <section class="bottom-grid">
-      <div class="panel"><div class="panel-title"><span>Componentes relacionados</span><span class="muted" id="component-count"></span></div><div class="component-list" id="component-list"></div></div>
-      <div class="panel output-panel"><div class="panel-title"><span>Salida del recorrido</span><span class="live">● SIMULACIÓN</span></div><div id="output"><strong>Selecciona “Siguiente” para comenzar.</strong><span>El visor no se conecta a GCP ni modifica datos reales.</span></div></div>
-    </section>
+    <header class="topbar"><div><span class="eyebrow">LUMINA RETAIL / EXPLORADOR OPERATIVO</span><h1>Un dato, paso a paso.</h1><p>Selecciona una rama y abre cada componente para saber qué recibe, qué transforma, qué entrega y qué contrato respeta.</p></div><div class="top-actions"><button class="mode active" data-mode="streaming">Streaming</button><button class="mode" data-mode="batch">Batch</button><button class="reset" id="reset">↺ Reiniciar</button></div></header>
+    <section class="scenario"><div><span class="status-dot"></span><strong id="scenario-title"></strong><span id="scenario-description"></span></div><div class="sample-select"><label>Dato de prueba</label><select id="sample-select"></select></div></section>
+    <section class="workspace"><aside class="flow-panel"><div class="panel-heading"><span class="eyebrow">RUTA DE DATOS</span><span id="step-counter">01 / 08</span></div><div class="flow-list" id="flow-list"></div><div class="flow-actions"><button id="prev">← Anterior</button><button class="primary" id="next">Siguiente →</button></div></aside><section class="detail-panel" aria-live="polite"><div class="detail-top"><div><span class="eyebrow" id="step-kicker"></span><h2 id="step-title"></h2><p id="step-purpose"></p></div><span class="latency" id="step-latency"></span></div><div class="detail-grid"><div class="visual" id="visual"></div><div class="contract"><div class="block-title">Contrato y control</div><div class="contract-row"><span>Contrato</span><b id="contract-name"></b></div><div class="contract-row"><span>Validación</span><b id="validation"></b></div><div class="contract-row"><span>Persistencia</span><b id="persistence"></b></div></div></div><div class="io-grid"><div class="io-card input"><div class="io-title"><span>ENTRA</span><b id="input-label"></b></div><pre id="input-data"></pre></div><div class="io-arrow">→</div><div class="io-card output"><div class="io-title"><span>SALE</span><b id="output-label"></b></div><pre id="output-data"></pre></div></div><div class="explain"><span class="eyebrow">QUÉ ESTÁ PASANDO</span><p id="step-explain"></p></div></section></section>
+    <section class="trace"><div class="trace-head"><span class="eyebrow">TRAZABILIDAD DEL DATO</span><span id="trace-id"></span></div><div class="trace-items" id="trace-items"></div></section>
   </main>
   <script src="app.js"></script>
-</body>
-</html>
+</body></html>
