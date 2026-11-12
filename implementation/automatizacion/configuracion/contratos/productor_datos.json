@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "description": "Payloads de entrada usados por la app productora; derivan de batch_sources.json, bigquery_schema.json y las transformaciones de Silver.",
+  "batch_domains": {
+    "pedidos": {
+      "producer": "Sistema de Pedidos",
+      "bronze_table": "pedidos_raw",
+      "required": ["order_id", "sku_id", "quantity"],
+      "effective_fields": ["occurred_at", "ts_creado", "effective_at"],
+      "types": {"quantity": "integer"}
+    },
+    "inventario": {
+      "producer": "ERP / Sistema de Inventario",
+      "bronze_table": "inventario_raw",
+      "required": ["snapshot_id", "warehouse_id", "sku_id", "on_hand_qty", "reserved_qty"],
+      "effective_fields": ["effective_at", "fecha"],
+      "types": {"on_hand_qty": "integer", "reserved_qty": "integer"}
+    },
+    "entregas": {
+      "producer": "Aplicación de Almacenes",
+      "bronze_table": "entregas_raw",
+      "required": ["delivery_id", "order_id"],
+      "effective_fields": ["effective_at", "promised_at", "delivered_at"],
+      "types": {"delivery_cost": "number"}
+    },
+    "benchmark_competidores": {
+      "producer": "Benchmark Competidores",
+      "bronze_table": "benchmark_competidores_raw",
+      "required": ["benchmark_id", "competitor_id", "sku_id", "competitor_price", "availability"],
+      "effective_fields": ["effective_at", "observed_at"],
+      "types": {"competitor_price": "number"}
+    },
+    "eventos_locales": {
+      "producer": "Eventos Locales",
+      "bronze_table": "eventos_locales_raw",
+      "required": ["local_event_id", "store_id", "event_type", "start_at", "end_at", "impact_score"],
+      "effective_fields": ["effective_at", "start_at"],
+      "types": {"impact_score": "number"}
+    },
+    "redes_sociales": {
+      "producer": "Redes Sociales",
+      "bronze_table": "redes_sociales_raw",
+      "required": ["post_id", "platform", "published_at", "sentiment_score", "engagement_count", "text_hash"],
+      "effective_fields": ["effective_at", "published_at"],
+      "types": {"sentiment_score": "number", "engagement_count": "integer"}
+    }
+  },
+  "streaming": {
+    "topic_suffix": "eventos-retail",
+    "producers": {
+      "id-0035721989114a46af260434cddb641b": {"producer": "Aplicaciones de Canal (Web / App / POS)", "producer_id": "channel-apps", "event_type": "order_created", "target": "pedidos", "payload_kind": "order"},
+      "id-68f797120ee647dc9272b2367d134137": {"producer": "Cámaras frigoríficas", "producer_id": "cold-room-sensors", "event_type": "cold_chain_reading", "target": "telemetria_activos", "payload_kind": "telemetry"},
+      "id-290734d56ef8404a919c6b72b79d40ee": {"producer": "Estantería Inteligente", "producer_id": "smart-shelves", "event_type": "inventory_level_changed", "target": "inventario", "payload_kind": "inventory"},
+      "id-a291f717742d4835af237a0e95417078": {"producer": "Sensores IoT de Tienda", "producer_id": "store-iot-sensors", "event_type": "store_sensor_reading", "target": "telemetria_activos", "payload_kind": "telemetry"},
+      "id-0c42195fcc814ae285645d446ffad50f": {"producer": "Sensores de almacén", "producer_id": "warehouse-sensors", "event_type": "warehouse_sensor_reading", "target": "telemetria_activos", "payload_kind": "telemetry"},
+      "id-ead2c875fc784f32b2936634d1835f7a": {"producer": "Tracking Logistico", "producer_id": "logistics-tracking", "event_type": "delivery_status_changed", "target": "entregas", "payload_kind": "delivery"}
+    },
+    "supported_event_types": {
+      "order_created": {
+        "producer_id": "channel-apps",
+        "required_payload": ["order_id", "product_id", "quantity"],
+        "silver_table": "pedidos",
+        "pipeline_status": "Dataflow a desplegar con rutas multi-dominio"
+      },
+      "cold_chain_reading": {"producer_id": "cold-room-sensors", "required_payload": ["asset_id", "sensor_id", "warehouse_id", "metric_value", "unit"], "silver_table": "telemetria_activos", "pipeline_status": "Dataflow multi-dominio"},
+      "inventory_level_changed": {"producer_id": "smart-shelves", "required_payload": ["snapshot_id", "warehouse_id", "sku_id", "on_hand_qty", "reserved_qty"], "silver_table": "inventario", "pipeline_status": "Dataflow multi-dominio"},
+      "store_sensor_reading": {"producer_id": "store-iot-sensors", "required_payload": ["asset_id", "sensor_id", "store_id", "metric_value", "unit"], "silver_table": "telemetria_activos", "pipeline_status": "Dataflow multi-dominio"},
+      "warehouse_sensor_reading": {"producer_id": "warehouse-sensors", "required_payload": ["asset_id", "sensor_id", "warehouse_id", "metric_value", "unit"], "silver_table": "telemetria_activos", "pipeline_status": "Dataflow multi-dominio"},
+      "delivery_status_changed": {"producer_id": "logistics-tracking", "required_payload": ["delivery_id", "order_id", "delivered_at"], "silver_table": "entregas", "pipeline_status": "Dataflow multi-dominio"}
+    }
+  }
+}
