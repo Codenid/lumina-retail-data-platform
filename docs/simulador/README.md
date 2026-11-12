@@ -1,11 +1,12 @@
-# Simulador end-to-end
+# Explorador end-to-end
 
-Visor visual y autónomo para explicar cómo un dato recorre la plataforma
-Lumina Retail. No se conecta a GCP ni modifica datos reales.
+Simulador visual autocontenido, disponible dentro del portal integral. Recorre
+CU01–CU04, el flujo de pedido streaming y la demostración batch de Dataproc.
 
-Abrir [`index.html`](index.html) en un navegador. Permite:
+Cada paso muestra la entrada recibida, la transformación y salida, el contrato,
+las validaciones, la persistencia y los controles relacionados. La salida de
+una etapa alimenta la entrada de la siguiente; las bifurcaciones Pub/Sub indican
+de qué suscripción procede cada rama.
 
-- recorrer los flujos streaming y batch;
-- avanzar, retroceder o reproducir una simulación;
-- seleccionar una etapa para ver sus componentes y payload simulado;
-- seguir la trazabilidad desde el origen hasta la API o el producto final.
+El catálogo permite consultar los 20 componentes del mapeo ArchiMate. Los datos
+son ilustrativos y no se envían a GCP.
