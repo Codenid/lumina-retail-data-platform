@@ -312,9 +312,12 @@ def _load_to_bronze(domain: str, uri: str, batch_id: str) -> int:
         raise
     except Exception as exc:
         LOGGER.exception("Batch load failed for %s", domain)
-        raise HTTPException(502, f"No se pudo confirmar la carga Bronze de {domain}") from exc
+        raise HTTPException(502, f"No se pudo confirmar la carga Bronze de {domain}: {exc}") from exc
     finally:
-        bq.delete_table(stage, not_found_ok=True)
+        try:
+            bq.delete_table(stage, not_found_ok=True)
+        except Exception:
+            LOGGER.warning("Could not clean BigQuery staging table %s", stage, exc_info=True)
 
 
 def _start_batch_workflow(batch_id: str) -> str | None:
@@ -417,6 +420,7 @@ def _run_batch(run_id: str) -> None:
     total_rows = 0
     files_created = 0
     cycle_number = 0
+    stage = "preparar acceso a Landing"
     try:
         while not stop.is_set() and time.monotonic() < end_at:
             tick = time.monotonic()
@@ -440,7 +444,9 @@ def _run_batch(run_id: str) -> None:
                         "payload_json": payload, "is_valid": True, "error_reason": None,
                     }, ensure_ascii=False, separators=(",", ":")))
                 blob = bucket.blob(f"generated/{run_id}/{domain}/{file_id}.jsonl")
+                stage = f"subir archivo del dominio {domain} a Landing"
                 blob.upload_from_string("\n".join(envelopes) + "\n", content_type="application/x-ndjson")
+                stage = f"cargar dominio {domain} de Landing a Bronze"
                 loaded = _load_to_bronze(domain, uri, run_id)
                 total_rows += loaded
                 files_created += 1
@@ -448,6 +454,7 @@ def _run_batch(run_id: str) -> None:
                          generated=sequence, elapsed_seconds=round(time.monotonic() - started, 1),
                          last_file=uri)
             stop.wait(min(max(0, tick + interval - time.monotonic()), max(0, end_at - time.monotonic())))
+        stage = "iniciar el Workflow de procesamiento batch"
         workflow = _start_batch_workflow(run_id)
         processing_note = ("Workflow iniciado para curar Silver y materializar salidas Gold."
                            if workflow else "Archivos Landing y filas Bronze cargados; no se confirmó el inicio del Workflow.")
@@ -456,8 +463,13 @@ def _run_batch(run_id: str) -> None:
                  elapsed_seconds=round(time.monotonic() - started, 1),
                  workflow_execution=workflow, processing_note=processing_note, finished_at=_iso_now())
     except Exception as exc:
-        LOGGER.exception("Batch run failed: %s", run_id)
-        _set_run(run_id, status="FAILED", error=str(exc), rows_loaded=total_rows,
+        LOGGER.exception("Batch run failed at %s: %s", stage, run_id)
+        if isinstance(exc, HTTPException):
+            cause = f"{exc.detail} (HTTP {exc.status_code})"
+        else:
+            cause = f"{type(exc).__name__}: {exc}"
+        _set_run(run_id, status="FAILED", failure_stage=stage,
+                 error=f"Falló al {stage}: {cause}", rows_loaded=total_rows,
                  files_created=files_created, finished_at=_iso_now())
 
 

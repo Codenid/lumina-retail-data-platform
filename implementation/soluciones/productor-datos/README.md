@@ -52,6 +52,10 @@ simulación, porque el controlador de carga vive en el proceso. El servicio
 genera costo mientras permanezca desplegado; el volumen estimado no es un
 estimador monetario.
 
+El despliegue asigna al productor lectura y escritura de objetos en Landing.
+BigQuery necesita leer esos objetos para cargar Bronze. Si solo se actualiza el
+código, vuelve a ejecutar `deploy.sh` para aplicar también los permisos IAM.
+
 ## Perfiles y límites
 
 Streaming: 1–10.000 eventos/s totales y 1–60 minutos. Batch: 1–100.000 filas

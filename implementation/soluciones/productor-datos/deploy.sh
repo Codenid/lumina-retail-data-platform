@@ -44,6 +44,8 @@ gcloud pubsub topics add-iam-policy-binding "$TOPIC" --project="$PROJECT_ID" \
 gcloud storage buckets add-iam-policy-binding "gs://$LANDING" \
   --member="serviceAccount:$RUNTIME_SA" --role=roles/storage.objectCreator >/dev/null
 gcloud storage buckets add-iam-policy-binding "gs://$LANDING" \
+  --member="serviceAccount:$RUNTIME_SA" --role=roles/storage.objectViewer >/dev/null
+gcloud storage buckets add-iam-policy-binding "gs://$LANDING" \
   --member="serviceAccount:$RUNTIME_SA" --role=roles/storage.legacyBucketReader >/dev/null
 gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$RUNTIME_SA" \
   --role=roles/bigquery.jobUser --condition=None >/dev/null
