@@ -34,13 +34,14 @@ Abre `http://127.0.0.1:8081`. Si el puerto está ocupado, ejecuta
 
 ## Actualización y despliegue GCP
 
-Actualiza los consumidores antes de usar los nuevos perfiles:
+Despliega la aplicación después de crear los recursos y permisos. La ejecución
+Batch requiere Workflows desplegado; la ejecución Streaming necesita un Dataflow
+Silver activo. La falta de Dataflow ya no bloquea el despliegue ni las cargas Batch.
 
-1. Ejecuta los preflight de Dataflow y Workflows del runbook.
-2. Reinicia Dataflow con `automatizacion/scripts/07_iniciar_dataflow.sh` y
-   verifica el job con el paso 08.
-3. Despliega el Workflow actualizado con los pasos 49–50.
-4. Despliega la aplicación privada:
+1. Para Batch, ejecuta los preflight y despliega el Workflow con los pasos 49–50.
+2. Para Streaming, ejecuta los preflight de Dataflow y reinicia el consumidor con
+   `automatizacion/scripts/07_iniciar_dataflow.sh`; verifica el job con el paso 08.
+3. Despliega la aplicación privada:
 
 ```bash
 bash implementation/soluciones/productor-datos/deploy.sh

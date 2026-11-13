@@ -16,8 +16,12 @@ heading 'Preflight de los puntos de entrada existentes'
 gcloud pubsub topics describe "$TOPIC" --project="$PROJECT_ID" >/dev/null
 gcloud storage buckets describe "gs://$LANDING" >/dev/null
 gcloud workflows describe "$WORKFLOW_NAME" --project="$PROJECT_ID" --location="$REGION" >/dev/null
-ACTIVE_STREAM_JOB="$(gcloud dataflow jobs list --project="$PROJECT_ID" --region="$REGION" --status=active --format='value(name)' | awk -v prefix="${PREFIX}-silver-" 'index($0,prefix)==1 {print; exit}')"
-[[ -n "$ACTIVE_STREAM_JOB" ]] || { echo 'No hay un Dataflow Silver activo. Actualiza/reinicia el consumidor antes de desplegar la productora.' >&2; exit 1; }
+if ACTIVE_STREAM_JOB="$(gcloud dataflow jobs list --project="$PROJECT_ID" --region="$REGION" --status=active --format='value(name)' 2>/dev/null | awk -v prefix="${PREFIX}-silver-" 'index($0,prefix)==1 {print; exit}')" \
+  && [[ -n "$ACTIVE_STREAM_JOB" ]]; then
+  echo "Consumidor Streaming activo: $ACTIVE_STREAM_JOB"
+else
+  echo 'Advertencia: no se confirmó un Dataflow Silver activo. El productor se desplegará; Batch puede ejecutarse, pero los eventos Streaming esperarán en Pub/Sub hasta que el consumidor esté activo.' >&2
+fi
 bq show --project_id="$PROJECT_ID" "$PROJECT_ID:$BRONZE_DATASET.pedidos_raw" >/dev/null
 for domain in pedidos inventario entregas benchmark_competidores eventos_locales redes_sociales; do
   bq show --project_id="$PROJECT_ID" "$PROJECT_ID:$BRONZE_DATASET.${domain}_raw" >/dev/null
