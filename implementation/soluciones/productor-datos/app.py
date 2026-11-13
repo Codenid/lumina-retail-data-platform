@@ -275,7 +275,10 @@ def _effective_at(payload: dict, fields: list[str], now: str) -> str:
 
 
 def _raw_schema(domain: str) -> list[bigquery.SchemaField]:
-    schema = BATCH_SCHEMA["bronze"][f"{domain}_raw"]
+    table_name = f"{domain}_raw"
+    schema = BATCH_SCHEMA.get("bronze", {}).get(table_name)
+    if not schema:
+        raise HTTPException(503, f"No hay esquema de carga Bronze configurado para {table_name}")
     return [bigquery.SchemaField(name, field_type) for name, field_type, *_ in schema]
 
 
