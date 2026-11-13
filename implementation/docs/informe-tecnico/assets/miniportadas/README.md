@@ -1,20 +1,21 @@
-# Miniportadas técnicas Lumina Retail P2
+# Miniportadas técnicas Lumina Retail
 
-12 ilustraciones vectoriales monocromáticas, sin personas ni marcas, una por capítulo del informe. Fondo blanco, líneas negras y objetos tecnológicos. **Estas ilustraciones SVG son versiones iniciales de diagramación**, no reproducciones exactas del grabado editorial de P1. La imagen piloto de grabado generada durante la revisión visual no está incorporada aquí. La miniportada se integra inmediatamente después del título de capítulo en el Markdown.
+13 miniportadas para los capítulos del informe. Las imágenes PNG se usan en el PDF y Markdown; el capítulo 12 incluye además un SVG fuente. La nueva portada de reproducibilidad representa el repositorio, las rutas de procesamiento y la validación.
 
 | Archivo | Capítulo |
 |---|---|
-| 01-resumen-ejecutivo.svg | 1 |
-| 02-contexto-objetivos.svg | 2 |
-| 03-arquitectura-solucion.svg | 3 |
-| 04-fuentes-contratos.svg | 4 |
-| 05-streaming.svg | 5 |
-| 06-batch.svg | 6 |
-| 07-transformacion-calidad.svg | 7 |
-| 08-modelado-gold.svg | 8 |
-| 09-consumo-api.svg | 9 |
-| 10-seguridad-observabilidad.svg | 10 |
-| 11-validacion-e2e.svg | 11 |
-| 12-evolucion.svg | 12 |
+| 01-resumen-ejecutivo.png | 1 |
+| 02-contexto-objetivos.png | 2 |
+| 03-arquitectura-solucion.png | 3 |
+| 04-fuentes-contratos.png | 4 |
+| 05-streaming.png | 5 |
+| 06-batch.png | 6 |
+| 07-transformacion-calidad.png | 7 |
+| 08-modelado-gold.png | 8 |
+| 09-consumo-api.png | 9 |
+| 10-seguridad-observabilidad.png | 10 |
+| 11-validacion-e2e.png | 11 |
+| 12-reproducibilidad.png / 12-reproducibilidad.svg | 12 |
+| 13-conclusion.png | 13 |
 
-Para la versión final puede sustituirse cada SVG por un PNG de grabado aprobado conservando su ubicación y ajustando el enlace Markdown.
+Las portadas se integran inmediatamente después del título de cada capítulo.

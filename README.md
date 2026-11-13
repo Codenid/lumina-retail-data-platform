@@ -1,7 +1,7 @@
 # Lumina Retail
 ### Anticipar la demanda. Optimizar el inventario. Acelerar la entrega.
 
-[Portal de entrega](docs/index.html) · [Informe completo](docs/report/Lumina_Retail_Informe.pdf) · [Informe de implementación](implementation/docs/informe-tecnico/informe/informe-tecnico-implementacion-gcp.pdf) · [Web de costos](docs/costos/index.html) · [Arquitectura](#arquitectura) · [Implementación](#implementación) · [Documentación](#documentación)
+[Portal de entrega](docs/index.html) · [Informes](docs/informes/) · [Informe general](docs/informes/informe-general.pdf) · [Informe de implementación](docs/informes/informe-tecnico-implementacion-gcp.pdf) · [Web de costos](docs/costos/index.html) · [Arquitectura](#arquitectura) · [Implementación](#implementación) · [Documentación](#documentación)
 
 ### [Abrir portal web público de Lumina Retail ↗](https://codenid.github.io/lumina-retail-data-platform/)
 
@@ -32,8 +32,8 @@ automatización y las evidencias del proyecto.
 ## Documentación
 
 - [Portal de entrega integral](docs/index.html)
-- [Informe general](docs/report/Lumina_Retail_Informe.pdf)
-- [Informe de implementación GCP](implementation/docs/informe-tecnico/informe/informe-tecnico-implementacion-gcp.pdf)
+- [Informe general](docs/informes/informe-general.pdf)
+- [Informe de implementación GCP](docs/informes/informe-tecnico-implementacion-gcp.pdf)
 - [Web de costos](docs/costos/index.html)
 - [Simulador end-to-end](docs/simulador/index.html)
 - [Guía de implementación](implementation/README.md)

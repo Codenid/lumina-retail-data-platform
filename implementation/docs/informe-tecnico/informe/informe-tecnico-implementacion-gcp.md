@@ -2,6 +2,12 @@
 
 **Organización:** RetailSmart Global · **Solución:** Lumina Retail · **Documento:** Informe técnico de implementación · **Plataforma:** Google Cloud
 
+## Control de cambios
+
+| Versión | Fecha | Descripción |
+|---|---|---|
+| 1.0 | 2026 | Creación del informe técnico de implementación y validación de Lumina Retail. |
+
 ## Índice
 
 1. [Resumen ejecutivo](#1-resumen-ejecutivo)
@@ -15,9 +21,10 @@
 9. [Exposición y consumo de datos](#9-exposicion-y-consumo-de-datos)
 10. [Seguridad, gobierno y observabilidad](#10-seguridad-gobierno-y-observabilidad)
 11. [Validación end-to-end y resultados](#11-validacion-endtoend-y-resultados)
-12. [Conclusiones y hoja de evolución](#12-conclusiones-y-hoja-de-evolucion)
+12. [Reproducibilidad y navegación del repositorio](#12-reproducibilidad-y-navegacion-del-repositorio)
+13. [Conclusión ejecutiva](#13-conclusion-ejecutiva)
 
-**Anexos:** [A. Interfaces y recursos](#anexo-a-inventario-de-interfaces-y-recursos) · [B. Eventos y mensajería](#anexo-b-contratos-de-eventos-y-mensajeria) · [C. API REST](#anexo-c-contratos-rest-de-consumo) · [D. Diccionario físico](#anexo-d-diccionario-fisico-de-datos) · [E. Batch](#anexo-e-contratos-de-archivos-y-procesamiento-batch) · [F. Transformaciones](#anexo-f-mapeo-de-transformaciones-y-reglas-de-calidad) · [G. Productos Gold](#anexo-g-contratos-de-productos-analiticos-gold) · [H. Metadatos y linaje](#anexo-h-metadatos-linaje-y-controles-operativos) · [I. Pruebas](#anexo-i-pruebas-de-contrato-e-integracion) · [J. Referencias](#anexo-j-referencias-tecnicas-y-fuentes-de-verdad).
+**Anexos:** [A. Interfaces y recursos](#anexo-a-inventario-de-interfaces-y-recursos) · [B. Eventos y mensajería](#anexo-b-contratos-de-eventos-y-mensajeria) · [C. API REST](#anexo-c-contratos-rest-de-consumo) · [D. Diccionario físico](#anexo-d-diccionario-fisico-de-datos) · [E. Batch](#anexo-e-contratos-de-archivos-y-procesamiento-batch) · [F. Transformaciones](#anexo-f-mapeo-de-transformaciones-y-reglas-de-calidad) · [G. Productos Gold](#anexo-g-contratos-de-productos-analiticos-gold) · [H. Metadatos y linaje](#anexo-h-metadatos-linaje-y-controles-operativos) · [I. Pruebas](#anexo-i-pruebas-de-contrato-e-integracion) · [J. Referencias](#anexo-j-referencias-tecnicas-y-fuentes-de-verdad) · [K. Catálogo de scripts](#anexo-k-catalogo-completo-de-scripts-y-utilidades).
 
 
 ---
@@ -32,7 +39,7 @@ RetailSmart Global necesita transformar señales fragmentadas de pedidos, invent
 
 | Compromiso | Materialización técnica | Criterio de aceptación |
 |---|---|---|
-| Procesamiento continuo | Pub/Sub → Apache Beam/Dataflow → BigQuery Silver/Gold | Correlación del mismo `event_id` entre entrada, curación y salida |
+| Procesamiento continuo | Pub/Sub → Apache Beam/Dataflow → BigQuery Silver; consumo Gold separado | `event_id` en raw y `order_id` en Silver |
 | Procesamiento por lotes | Landing → BigQuery Bronze/Silver/Gold, orquestado con Workflows | `batch_id` y conteos conciliados en cada etapa |
 | Integración de datos | Normalización, reglas de calidad y joins por claves sustentadas | Evidencia SQL y resultado antes/después |
 | Analítica | Productos Gold, Operational Mart, vistas | Esquemas, granularidad y consultas reproducibles |
@@ -84,7 +91,7 @@ La vista ArchiMate describe los componentes, integraciones y responsabilidades d
 | Landing | Cloud Storage | Cloud Storage | Conservación de archivos de entrada y URI de origen |
 | Mensajería | Pub/Sub | Pub/Sub | Suscripciones independientes para raw y procesamiento |
 | Streaming | Beam/Dataflow | Beam/Dataflow | Separación de transporte, validación y escritura |
-| Batch | Procesamiento por lotes | Workflows + SQL / cómputo opcional | Orquestación explícita; Dataproc efímero si corresponde |
+| Batch | Procesamiento por lotes | Workflows + BigQuery SQL | Orquestación y materialización; Dataproc es una ruta de cómputo separada |
 | Exposición | Productos analíticos | BigQuery Gold + Cloud Run privado | Lectura IAM y API sin consumidor externo aprovisionado |
 
 **Control operativo:** la ejecución de los servicios se complementa con conciliaciones de registros y comprobación de los datos materializados. El estado de infraestructura y la integridad del dato se supervisan por separado.
@@ -93,7 +100,6 @@ La vista ArchiMate describe los componentes, integraciones y responsabilidades d
 
 ![Vista de Inventario de servicios GCP](../assets/evidencia/01-fundacion/01-inventario-servicios.png)
 
-*Figura de referencia operativa. Vista prevista: proyecto, región, recursos reales y estado. Archivo de evidencia: `01-fundacion/01-inventario-servicios.png`.*
 
 
 
@@ -121,14 +127,23 @@ El generador publica un mensaje JSON con el siguiente contrato de referencia, de
 
 | Campo de entrada | Tipo | Propósito | Ejemplo del contrato |
 |---|---|---|---|
-| `schema_version` | string | versión del esquema | `1.0.0` |
+| `schema_version` | string | versión del esquema | `1.1.0` |
 | `simulation_id` / `scenario_id` | string | correlación de simulación y escenario | `sim-20261103-001` / `black-friday` |
 | `producer_id` / `event_type` | string | productor y tipo de evento | `channel-apps` / `order_created` |
 | `event_id` / `trace_id` | string | identidad y seguimiento | `evt-000001` / `trace-order-000001` |
 | `occurred_at` / `emitted_at` | string ISO 8601 | tiempos de negocio y emisión | `2026-11-03T10:00:00Z` |
-| `payload` | objeto JSON | atributos del pedido | `order_id, customer_id, store_id, product_id, quantity` |
+| `payload` | objeto JSON | atributos del pedido | `order_id, order_line_id, customer_id, store_id, product_id, quantity` |
 
-**Salida contractual:** Pub/Sub distribuye el mensaje a los destinos de persistencia raw y procesamiento. El contrato original utiliza `payload.product_id`; el modelo batch Silver utiliza `sku_id`. Esta correspondencia requiere transformación explícita y no se presupone. El contrato íntegro y sus tipos se documentan en el anexo B.
+**Correspondencia streaming:** la app representa los seis productores definidos en ArchiMate. Pub/Sub recibe sus eventos; Dataflow valida el envelope y enruta cada tipo a su entidad Silver. En pedidos, convierte explícitamente `product_id` a `sku_id`. El detalle de campos obligatorios y salidas está en el anexo B.
+
+| Productor ArchiMate | Evento y campos clave | Entrada GCP | Salida Dataflow |
+|---|---|---|---|
+| Canales Web/App/POS | `order_created`: `order_id`, `order_line_id`, `product_id`, `quantity` | Pub/Sub | Silver.pedidos |
+| Cámaras frigoríficas | `cold_chain_reading`: `asset_id`, `sensor_id`, `warehouse_id`, `metric_value`, `unit` | Pub/Sub | Silver.telemetria_activos |
+| Estantería inteligente | `inventory_level_changed`: `snapshot_id`, `warehouse_id`, `sku_id`, `on_hand_qty`, `reserved_qty` | Pub/Sub | Silver.inventario |
+| Sensores IoT de tienda | `store_sensor_reading`: `asset_id`, `sensor_id`, `store_id`, `metric_value`, `unit` | Pub/Sub | Silver.telemetria_activos |
+| Sensores de almacén | `warehouse_sensor_reading`: `asset_id`, `sensor_id`, `warehouse_id`, `metric_value`, `unit` | Pub/Sub | Silver.telemetria_activos |
+| Tracking logístico | `delivery_status_changed`: `delivery_id`, `order_id`, `delivered_at` | Pub/Sub | Silver.entregas |
 
 ### Medallion físico
 
@@ -153,13 +168,11 @@ El diccionario físico completo se mantiene en el anexo D.
 
 ![Vista de Buckets de Landing y artefactos](../assets/evidencia/01-fundacion/02-storage-buckets.png)
 
-*Figura de referencia operativa. Vista prevista: ubicación, nombres y políticas de acceso sin exponer secretos. Archivo de evidencia: `01-fundacion/02-storage-buckets.png`.*
 
 **Figura EV-DAT-02 — Datasets Bronze, Silver y Gold**
 
 ![Vista de Datasets Bronze, Silver y Gold](../assets/evidencia/01-fundacion/03-bigquery-medallion.png)
 
-*Figura de referencia operativa. Vista prevista: datasets reales, tablas y región. Archivo de evidencia: `01-fundacion/03-bigquery-medallion.png`.*
 
 
 
@@ -171,17 +184,17 @@ El diccionario físico completo se mantiene en el anexo D.
 
 ### Bifurcación del tópico de entrada
 
-La publicación se entrega a tres suscripciones independientes: una exporta el raw hacia BigQuery Bronze, otra conserva archivos JSONL en Cloud Storage y otra alimenta el procesamiento Apache Beam/Dataflow hacia Silver. El consumidor debe preservar `event_id`, `message_id`, `publish_time` y los atributos pertinentes. La transformación de `order_created` produce la entidad Silver de pedidos cuando satisface las reglas.
+La publicación se entrega a tres suscripciones independientes: raw en BigQuery, archivo JSONL en Cloud Storage y procesamiento Beam/Dataflow hacia Silver. La confirmación del publicador acredita recepción en Pub/Sub; no confirma por sí sola la escritura en Bronze o Silver.
 
 | Etapa | Entrada | Operación | Salida / control |
 |---|---|---|---|
 | Publicación | JSON de evento | Validación contractual de origen | `event_id` y `messageId` |
 | Raw | Suscripción BigQuery | Persistencia del mensaje | `Bronze.eventos_raw_pubsub` |
-| Curación | Suscripción Dataflow | Parseo, validación, tipado, filtro | `Silver.pedidos` |
-| Negocio | Silver | Reglas y materialización | Productos Gold pertinentes |
-| Cierre | Dataflow job | Cancelación explícita | `job_id`, estado terminal |
+| Curación | Suscripción Dataflow | Validación y enrutamiento por `event_type` | Silver.pedidos, inventario, entregas o telemetría |
+| Consumo | entidades Silver | procesamiento separado por producto | Gold mediante sus procesos configurados |
+| Control | ID de mensaje y consultas GCP | verificar materialización por etapa | recepción Pub/Sub no equivale a escritura Silver |
 
-**Prueba funcional mínima:** publicar un evento único; consultar Bronze y Silver filtrando por el mismo `event_id`; verificar `order_id`, calidad y campos normalizados; conservar el ID del job y su cierre. Los duplicados y eventos tardíos requieren criterios explícitos de idempotencia y vigencia.
+**Trazabilidad:** el evento raw conserva `event_id`; Silver.pedidos conserva `order_id` y `order_line_id`. La correlación se realiza mediante esas claves. Dataflow termina en Silver; Gold se materializa por procesos separados.
 
 ### Contrato de salida de Insights y auditoría
 
@@ -196,25 +209,21 @@ El segundo tópico y su Dataflow producen `Gold.insights_streaming` y `Gold.proc
 
 ![Vista de Tópico y suscripciones](../assets/evidencia/02-streaming/01-pubsub-topico-suscripciones.png)
 
-*Figura de referencia operativa. Vista prevista: nombre del tópico y ramas independientes de raw y Dataflow. Archivo de evidencia: `02-streaming/01-pubsub-topico-suscripciones.png`.*
 
 **Figura EV-STR-02 — Ejecución Dataflow**
 
 ![Vista de Ejecución Dataflow](../assets/evidencia/02-streaming/02-dataflow-job.png)
 
-*Figura de referencia operativa. Vista prevista: job, región, worker y estado terminal. Archivo de evidencia: `02-streaming/02-dataflow-job.png`.*
 
 **Figura EV-STR-03 — Evento correlacionado Bronze/Silver**
 
 ![Vista de Evento correlacionado Bronze/Silver](../assets/evidencia/02-streaming/03-bq-bronze-silver-evento.png)
 
-*Figura de referencia operativa. Vista prevista: mismo event_id y order_id en las consultas. Archivo de evidencia: `02-streaming/03-bq-bronze-silver-evento.png`.*
 
 **Figura EV-STR-04 — Insights y auditoría**
 
 ![Vista de Insights y auditoría](../assets/evidencia/03-insights/01-bq-insights-auditoria.png)
 
-*Figura de referencia operativa. Vista prevista: mismo event_id en ambas tablas Gold. Archivo de evidencia: `03-insights/01-bq-insights-auditoria.png`.*
 
 
 
@@ -226,7 +235,7 @@ El segundo tópico y su Dataflow producen `Gold.insights_streaming` y `Gold.proc
 
 ### Recorrido de procesamiento por lotes
 
-Los archivos ingresan a Cloud Storage Landing. Bronze conserva procedencia, `batch_id`, URI, fila y controles de validez; Silver normaliza entidades; Gold publica agregaciones y Operational Mart. Workflows coordina dependencias y estados; no reemplaza por sí mismo el procesamiento SQL o Spark.
+La app batch genera JSONL por dominio en Cloud Storage Landing, carga cada archivo a una tabla de staging de BigQuery y hace MERGE a Bronze (`*_raw`). Al terminar la generación, solicita Workflows; este ejecuta SQL en BigQuery para curar seis dominios Silver y materializar CU01–CU03 y `operational_mart`. La solicitud es asíncrona: el estado de la app confirma carga Bronze e inicio del Workflow, no la finalización de Gold.
 
 | Dominio | Tabla Bronze | Tabla Silver | Clave de negocio declarada |
 |---|---|---|---|
@@ -249,25 +258,24 @@ Los archivos ingresan a Cloud Storage Landing. Bronze conserva procedencia, `bat
 
 Los campos físicos del envelope Bronze, las claves de cada dominio y los esquemas de entrada se detallan en el anexo E.
 
-**Cómputo bajo demanda:** Storage Transfer gestiona transferencias y Dataproc/Spark puede ejecutar transformaciones intensivas mediante clústeres efímeros, sujetos a políticas de finalización.
+**Salida analítica:** pedidos + inventario alimentan CU01 y CU02; pedidos + entregas alimentan CU03. Los seis dominios aportan sus campos seleccionados al `operational_mart`. Los campos completos de entrada y su proyección se detallan en los anexos E y F.
+
+La ruta de la app productora no utiliza Storage Transfer ni Dataproc: escribe Landing, carga Bronze con BigQuery y transforma con SQL orquestado por Workflows. Los scripts de Storage Transfer y el job Dataproc son rutas separadas; no forman parte de este recorrido E2E.
 
 **Figura EV-BAT-01 — Landing y transferencia**
 
 ![Vista de Landing y transferencia](../assets/evidencia/04-batch/01-landing-transfer.png)
 
-*Figura de referencia operativa. Vista prevista: objeto fuente, trabajo y transferencia completada. Archivo de evidencia: `04-batch/01-landing-transfer.png`.*
 
 **Figura EV-BAT-02 — Ejecución Workflows**
 
 ![Vista de Ejecución Workflows](../assets/evidencia/04-batch/02-workflow-execution.png)
 
-*Figura de referencia operativa. Vista prevista: revisión, cuenta y ejecución SUCCEEDED. Archivo de evidencia: `04-batch/02-workflow-execution.png`.*
 
 **Figura EV-BAT-03 — Recorrido batch a Mart**
 
 ![Vista de Recorrido batch a Mart](../assets/evidencia/04-batch/03-bq-batch-mart.png)
 
-*Figura de referencia operativa. Vista prevista: mismo batch_id en Bronze, Silver, Gold y Mart. Archivo de evidencia: `04-batch/03-bq-batch-mart.png`.*
 
 
 
@@ -324,11 +332,11 @@ Los cruces entre pedidos, inventario, entregas y datos contextuales se realizan 
 | cu04_alertas_mantenimiento | escenario, activo, sensor y almacén | mantenimiento |
 | operational_mart | entity_type, entity_id, ingestion_mode, source_domain | integración transversal |
 
-**Modelo dimensional:** identificar hechos, dimensiones, claves y relaciones físicas solo cuando el DDL y las consultas lo demuestren. El nombre Gold no implica automáticamente un esquema estrella. Se documentará el grano real de cada tabla, particiones, clustering, campos de medida y política de actualización.
+**Modelo dimensional:** las tablas Gold no implican automáticamente un esquema estrella; los hechos, dimensiones, claves y relaciones físicas se determinan a partir del DDL y las consultas disponibles.
 
 ### Forecast como capacidad complementaria
 
-`moving_average_7d_baseline` demuestra la cadena `forecast_features` → `forecast_predictions` → `cu02_plan_reposicion`; el artefacto se conserva en el bucket Models bajo `forecast/DEMO_RUN_ID/MODEL_VERSION/model.json`. No se presenta como modelo predictivo final ni se infiere calidad sin evaluación.
+`moving_average_7d_baseline` aplica una media móvil de siete días y alimenta la cadena `forecast_features` → `forecast_predictions` → `cu02_plan_reposicion`; el artefacto se conserva en el bucket Models bajo `forecast/DEMO_RUN_ID/MODEL_VERSION/model.json`. No se reportan métricas de precisión predictiva.
 
 ### Vistas de reporting
 
@@ -338,13 +346,11 @@ Las vistas deben explicitar columnas, filtros, fuentes Gold y vigencia. El consu
 
 ![Vista de Forecast, predicción y reposición](../assets/evidencia/05-forecast/01-features-predicciones-plan.png)
 
-*Figura de referencia operativa. Vista prevista: identificador de corrida en features, predicción, plan y artefacto. Archivo de evidencia: `05-forecast/01-features-predicciones-plan.png`.*
 
 **Figura EV-GOL-02 — Vistas analíticas Gold**
 
 ![Vista de Vistas analíticas Gold](../assets/evidencia/06-consumo/03-bigquery-vistas.png)
 
-*Figura de referencia operativa. Vista prevista: vistas y consultas con resultados. Archivo de evidencia: `06-consumo/03-bigquery-vistas.png`.*
 
 
 
@@ -379,13 +385,11 @@ Las respuestas y los errores se derivan de `soluciones/api-insights/main.py`; el
 
 ![Vista de Servicio Cloud Run privado](../assets/evidencia/06-consumo/01-cloud-run-servicio.png)
 
-*Figura de referencia operativa. Vista prevista: revisión READY, región, identidad y autenticación. Archivo de evidencia: `06-consumo/01-cloud-run-servicio.png`.*
 
 **Figura EV-API-02 — Respuestas de negocio**
 
 ![Vista de Respuestas de negocio](../assets/evidencia/06-consumo/02-api-rutas.png)
 
-*Figura de referencia operativa. Vista prevista: HTTP 200 autenticado de las cuatro rutas. Archivo de evidencia: `06-consumo/02-api-rutas.png`.*
 
 
 
@@ -412,13 +416,7 @@ Las respuestas y los errores se derivan de `soluciones/api-insights/main.py`; el
 
 ![Vista de Gobierno y cifrado](../assets/evidencia/07-controles/03-seguridad-kms.png)
 
-*Captura disponible: KMS y seguridad, sin mostrar valores de secretos. Archivo: `07-controles/03-seguridad-kms.png`.*
-
-**Figura EV-SEC-02 — Auditoría y monitoreo**
-
-Evidencia no incluida en esta entrega.
-
-
+*Cifrado de datos mediante Cloud KMS, sin exponer valores de secretos.*
 
 ---
 
@@ -430,45 +428,45 @@ Evidencia no incluida en esta entrega.
 
 | Prueba | Criterio de aceptación | Evidencia esperada | IDs / conteos observados | Estado | Observación |
 |---|---|---|---|---|---|
-| VAL-STR-01 | Mismo `event_id` en Bronze y Silver | EV-STR-03 | Captura cargada | DOCUMENTADO | Consulta ejecutada en BigQuery |
-| VAL-STR-02 | Mismo `event_id` en Insights y auditoría Gold | EV-STR-04 | Captura cargada | DOCUMENTADO | Consulta ejecutada en BigQuery |
-| VAL-BAT-01 | Recorrido Bronze → Silver → Gold/Mart con `batch_id` | EV-BAT-03 | Captura cargada | DOCUMENTADO | Resultado batch cargado |
-| VAL-TRF-01 | Tipado, rechazo y deduplicación | SQL y resultado antes/después | No observados | BLOQUEADO | No se inspeccionaron resultados de ejecución |
-| VAL-INT-01 | Joins por claves sustentadas | SQL y resultado integrado | No observados | BLOQUEADO | No se inspeccionaron resultados ni cardinalidades |
-| VAL-MOD-01 | Producto Gold con grano y medidas validados | EV-GOL-02 | Captura cargada | DOCUMENTADO | Vistas Gold consultadas |
-| VAL-API-01 | API autenticada con respuesta HTTP 200 válida | EV-API-02 | Captura cargada | DOCUMENTADO | Cuatro rutas autenticadas verificadas |
+| VAL-STR-01 | `event_id` en Bronze y `order_id` en Silver | EV-STR-03 | Resultado registrado | DOCUMENTADO | Consulta ejecutada en BigQuery |
+| VAL-STR-02 | Mismo `event_id` en Insights y auditoría Gold | EV-STR-04 | Resultado registrado | DOCUMENTADO | Consulta ejecutada en BigQuery |
+| VAL-BAT-01 | Recorrido Bronze → Silver → Gold/Mart con `batch_id` | EV-BAT-03 | Resultado registrado | DOCUMENTADO | Consulta batch ejecutada |
+| VAL-TRF-01 | Tipado, rechazo y deduplicación | SQL y resultado antes/después | Sin resultados observados | NO VALIDADO | Sin evidencia de ejecución |
+| VAL-INT-01 | Joins por claves sustentadas | SQL y resultado integrado | Sin resultados observados | NO VALIDADO | Sin cardinalidades observadas |
+| VAL-MOD-01 | Producto Gold con grano y medidas validados | EV-GOL-02 | Resultado registrado | DOCUMENTADO | Vistas Gold consultadas |
+| VAL-API-01 | API autenticada con respuesta HTTP 200 válida | EV-API-02 | Resultado registrado | DOCUMENTADO | Cuatro rutas autenticadas verificadas |
 
-**Estado de la entrega:** se incorporaron las capturas PNG disponibles en `assets/evidencia/`. Esta entrega cierra la evidencia disponible para fundación, streaming, batch, forecast, API, vistas Gold y seguridad KMS. La captura de auditoría y observabilidad no se incluye en esta etapa; tampoco se incluyen capturas de gobierno/lineage si no fueron cargadas como PNG.
-
-Para reanudar el levantamiento se requiere una sesión de consola GCP accesible o un entorno autenticado con `gcloud` y `bq` disponibles y permisos de lectura sobre el proyecto `retailsmart-bigdata`. Cualquier consulta o acción no incluida en lectura seguirá sujeta al control de costos y autorización definido en este informe.
-
-### Procedimiento reproducible
-
-1. Preparar `config.env` desde `config.env.example`, sin versionar secretos.
-2. Ejecutar `bash automatizacion/scripts/00_runbook.sh` para validar inventario local; **no crea recursos**.
-3. Ejecutar grupos conforme a `automatizacion/configuracion/runbook.json`.
-4. Registrar IDs de recursos, ejecuciones, consultas, conteos y errores.
-5. Cancelar los jobs Dataflow de demostración y verificar estado terminal.
-6. No ejecutar el script 90 de eliminación como parte del recorrido estándar.
-
-Las figuras SVG grises señalan el archivo PNG real esperado y son **placeholders**, no pruebas. Antes de entrega formal al cliente, sustituirlas y actualizar la matriz con el resultado observado.
+**Cobertura de verificación:** las evidencias documentan publicación, cargas batch, materialización Gold y acceso a la API. La correlación streaming se realiza entre `event_id` raw y claves de negocio Silver; las reglas y cardinalidad de joins se verifican por separado.
 
 
 ---
 
-## 12. Conclusiones y hoja de evolución
+## 12. Reproducibilidad y navegación del repositorio
 
-![Apertura visual del capítulo](../assets/miniportadas/12-evolucion.png)
+![Portada del capítulo: código versionado, flujos y validación reproducible](../assets/miniportadas/12-reproducibilidad.png)
 
-### Resultado documental y límites
+El capítulo 11 presenta los resultados de validación. Este capítulo organiza la navegación del código, contratos, scripts y procedimientos reproducibles, con enlaces al detalle mantenido en el repositorio.
 
-La plataforma Lumina Retail integra procesamiento híbrido sobre BigQuery Medallion, con componentes de ingesta, curación, productos Gold, API y controles transversales. La demostración de éxito debe apoyarse en consultas y pruebas de datos, no en el inventario de servicios.
+| Etapa | Qué contiene y cómo participa | Referencia en el repositorio |
+|---|---|---|
+| Preparación y secuencia | Configuración local, preflight de acceso y scripts numerados. El paso 00 valida el inventario del runbook; los pasos 01–06 preparan la fundación. | [Scripts de automatización](https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/automatizacion/scripts); [manifiesto de ejecución](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/configuracion/runbook.json). |
+| Productor de datos | Perfiles de publicación streaming y batch alineados con los productores de ArchiMate. | [App productora](https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/soluciones/productor-datos); [contratos](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/configuracion/contratos/productor_datos.json); [mapa de productores](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/docs/arquitectura/productores.csv). |
+| Streaming | Apache Beam en Dataflow consume eventos de Pub/Sub y escribe las salidas Silver; un pipeline separado produce Insights Gold y auditoría. | [Código Beam](https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/soluciones/procesamiento-streaming); pasos 07–13 y 43–48. |
+| Batch e integración | BigQuery ejecuta cargas, curación y materialización; Workflows coordina recorridos batch. El job Spark/Dataproc se ejecuta en un clúster temporal. | [Definición Workflows](https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/soluciones/orquestacion-batch); [job Spark](https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/soluciones/procesamiento-batch); pasos 14–42 y 49–58. |
+| Modelado y consumo | Contratos JSON y SQL describen esquemas y productos; scripts posteriores crean mart, API y vistas de reporting. | [Contratos y SQL](https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/automatizacion/configuracion/contratos); pasos 59–69. |
+| Controles y validación | Scripts de catálogo, linaje, seguridad, auditoría y observabilidad; las pruebas automatizadas verifican contratos y componentes seleccionados. | Pasos 70–83; [pruebas](https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/tests); [guías operativas](https://github.com/Codenid/lumina-retail-data-platform/tree/main/implementation/docs/operacion). |
 
-**Decisiones pendientes de operación productiva:** cuotas, costos, retención, escalamiento, SLAs, gobernanza de contratos, monitoreo de calidad, consumidores externos y dimensionamiento. No se extrapolan resultados de una demo con un worker a campañas masivas.
+La [guía de ejecución](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/docs/operacion/ejecucion-scripts.md) explica el orden de los grupos, dependencias, resultados esperados, reejecución y exclusiones. Los scripts 14–58 cubren casos de uso, fuentes y recorridos batch; 59–69 publican productos de consumo. La configuración sensible y el estado de cada corrida permanecen locales y fuera del control de versiones.
 
-### Hoja de evolución
+---
 
-Priorizar (1) cerrar trazabilidad streaming y batch con evidencias; (2) consolidar diccionarios físicos y contratos versionados; (3) automatizar pruebas de calidad y conciliación; (4) medir latencia/costo bajo escenarios controlados; (5) incorporar consumidores externos con contratos independientes. Las decisiones de arquitectura y sus modificaciones se mantendrán en el registro de decisiones técnicas.
+## 13. Conclusión ejecutiva
+
+![Apertura visual del capítulo](../assets/miniportadas/13-conclusion.png)
+
+### Síntesis de la solución
+
+Lumina Retail integra ingesta streaming y batch, transformación por capas Bronze, Silver y Gold, productos analíticos para sus casos de uso y exposición mediante API privada. La solución incorpora controles de identidad, cifrado, catálogo y observabilidad para mantener los datos trazables y disponibles para el análisis operativo.
 
 ---
 
@@ -499,7 +497,7 @@ Fuente versionada: `docs/arquitectura/contrato-evento-original.json`. El script 
 
 ```json
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "simulation_id": "sim-20261103-001",
   "scenario_id": "black-friday",
   "producer_id": "channel-apps",
@@ -510,6 +508,7 @@ Fuente versionada: `docs/arquitectura/contrato-evento-original.json`. El script 
   "trace_id": "trace-order-000001",
   "payload": {
     "order_id": "ORD-000001",
+    "order_line_id": "LINE-001",
     "customer_id": "CUS-000001",
     "store_id": "STORE-001",
     "product_id": "SKU-0001",
@@ -528,12 +527,13 @@ Fuente versionada: `docs/arquitectura/contrato-evento-original.json`. El script 
 | occurred_at / emitted_at | timestamp ISO 8601 | momento de negocio y publicación | parseo temporal |
 | trace_id | string | seguimiento distribuido | correlación |
 | payload.order_id | string | pedido | clave de negocio |
+| payload.order_line_id | string | línea del pedido | clave compuesta en Silver |
 | payload.customer_id | string | cliente simulado | atributo de negocio |
 | payload.store_id | string | tienda | dimensión |
-| payload.product_id | string | SKU en el contrato original | atención: no confundir con `sku_id` de Silver |
+| payload.product_id | string | SKU del evento | Dataflow lo mapea a Silver.pedidos.sku_id |
 | payload.quantity | número | unidades | entero positivo según validación de destino |
 
-**Observación de compatibilidad:** el contrato original usa `product_id`, mientras la tabla Silver `pedidos` utiliza `sku_id`. La correspondencia debe demostrarse en el transformador real; no se presume equivalencia automática.
+**Mapeo aplicado:** Dataflow convierte `payload.product_id` a `Silver.pedidos.sku_id` y conserva `order_id`, `order_line_id`, cliente, tienda, almacén y cantidad.
 
 ### B.2 Topología y destinos
 
@@ -543,7 +543,7 @@ Fuente versionada: `docs/arquitectura/contrato-evento-original.json`. El script 
 | `$RAW_BQ_SUB` | export BigQuery | tópico `$TOPIC` | `Bronze.eventos_raw_pubsub` | `writeMetadata=true` |
 | `$RAW_SUB` | export Cloud Storage | tópico `$TOPIC` | bucket `$BRONZE`, `streaming/*.jsonl` | archivos JSONL, rotación de 60 s |
 
-Además, el script 05 crea `$INSIGHTS_TOPIC` y `$AUDIT_TOPIC`; sus contratos de mensaje deben cotejarse con los publicadores y consumidores correspondientes. La suscripción export a GCS es una **tercera rama**, además de Dataflow y BigQuery, que debe aparecer en el diagrama operativo.
+Los tópicos de Insights y auditoría alimentan pipelines independientes. No son destinos de los seis perfiles del generador principal. La exportación a Cloud Storage conserva una copia raw adicional; no es el Landing batch.
 
 ### B.3 Salida raw de Pub/Sub a BigQuery
 
@@ -556,7 +556,7 @@ Además, el script 05 crea `$INSIGHTS_TOPIC` y `$AUDIT_TOPIC`; sus contratos de 
 | attributes | JSON | atributos Pub/Sub |
 | ordering_key | STRING | clave de orden si existe |
 
-**Verificación:** publicar `evt-${DEMO_RUN_ID}` y consultar el mensaje en Bronze, contrastando su `event_id` con el registro Silver. La confirmación de publicación no demuestra por sí sola materialización.
+**Verificación:** consultar `event_id` en Bronze y `order_id`/`order_line_id` en Silver. El ack de Pub/Sub no demuestra por sí solo materialización.
 
 
 ---
@@ -857,16 +857,18 @@ Los siguientes campos y tipos provienen de las sentencias `CREATE TABLE IF NOT E
 
 ## Anexo E. Contratos de archivos y procesamiento batch
 
-Fuente versionada: `automatizacion/configuracion/contratos/batch_sources.json` (v1.0). **Todos los dominios corresponden a fixtures propios ad hoc**, aunque sus nombres de productor simulen sistemas empresariales.
+Fuente versionada: `automatizacion/configuracion/contratos/batch_sources.json` (v1.1). **Todos los dominios corresponden a fixtures propios ad hoc**, aunque sus nombres de productor simulen sistemas empresariales.
 
 | Dominio | Productor simulado | Entrada (payload JSON) | Clave | Destino Bronze → Silver |
 |---|---|---|---|---|
 | pedidos | Sistema de Pedidos | `order_id, order_line_id, customer_id, store_id, warehouse_id, sku_id, quantity, occurred_at` | `order_id + order_line_id` | `pedidos_raw` → `pedidos` |
-| inventario | ERP / Sistema de Inventario | `warehouse_id, store_id, sku_id, on_hand_qty, reserved_qty, effective_at` | `snapshot_id` | `inventario_raw` → `inventario` |
+| inventario | ERP / Sistema de Inventario | `snapshot_id, warehouse_id, store_id, sku_id, on_hand_qty, reserved_qty, effective_at` | `snapshot_id` | `inventario_raw` → `inventario` |
 | entregas | Aplicación de Almacenes | `delivery_id, order_id, store_id, region_id, promised_at, delivered_at, delivery_cost` | `delivery_id` | `entregas_raw` → `entregas` |
 | benchmark_competidores | Benchmark Competidores | `benchmark_id, competitor_id, sku_id, store_id, observed_at, competitor_price, availability, source_uri` | `benchmark_id` | `benchmark_competidores_raw` → `benchmark_competidores` |
 | eventos_locales | Eventos Locales | `local_event_id, store_id, event_type, start_at, end_at, impact_score, source_uri` | `local_event_id` | `eventos_locales_raw` → `eventos_locales` |
 | redes_sociales | Redes Sociales | `post_id, platform, published_at, sku_id, sentiment_score, engagement_count, text_hash, source_uri` | `post_id` | `redes_sociales_raw` → `redes_sociales` |
+
+**Proyección de campos:** Bronze conserva el payload original. Silver publica las columnas tipadas definidas por su esquema; `source_uri` de competidores, eventos locales y redes sociales permanece en Bronze y no se proyecta a Silver. La procedencia del archivo también se conserva en `source_file_uri` del envelope.
 
 ### E.1 Envelope físico Bronze para lotes
 
@@ -888,7 +890,7 @@ Las tablas `*_raw` usan el mismo esquema:
 
 ### E.2 Ejemplo de transformación física: inventario
 
-**Input:** `Bronze.inventario_raw.payload_json` con `warehouse_id`, `store_id`, `sku_id`, `on_hand_qty`, `reserved_qty`. **Transformación:** `SAFE_CAST` de cantidades a INT64, derivación de `snapshot_id=batch_id:file_id:source_row_number`, evaluación `on_hand_qty >= reserved_qty`. **Output:** `Silver.inventario(snapshot_id, warehouse_id, store_id, sku_id, on_hand_qty, reserved_qty, effective_at, quality_status)`. **Persistencia:** `MERGE` por snapshot_id.
+**Input:** `Bronze.inventario_raw.payload_json` con `snapshot_id`, `warehouse_id`, `store_id`, `sku_id` y cantidades. **Transformación:** conserva `snapshot_id` del productor; si falta, deriva `batch_id:file_id:source_row_number`. Convierte cantidades a INT64 y evalúa `on_hand_qty >= reserved_qty`. **Output:** `Silver.inventario(snapshot_id, warehouse_id, store_id, sku_id, on_hand_qty, reserved_qty, effective_at, quality_status)`. **Persistencia:** `MERGE` por snapshot_id.
 
 **Advertencia de calidad:** el SQL revisado asigna `quality_status='INVALID'` cuando falla la regla, pero el `MERGE` no descarta automáticamente la fila inválida; el filtrado a `VALID` se realiza en los productos Gold examinados.
 
@@ -902,7 +904,7 @@ Fuente: `automatizacion/scripts/57_curar_seis_fuentes_y_gold.sh`.
 | Input Bronze | Transformación implementada | Output Silver | Regla de calidad |
 |---|---|---|---|
 | pedidos_raw.payload_json | JSON_VALUE + SAFE_CAST(quantity AS INT64), MERGE por order_id/order_line_id | pedidos | is_valid y quantity > 0 |
-| inventario_raw.payload_json | SAFE_CAST cantidades, snapshot_id derivado, MERGE | inventario | on_hand_qty >= reserved_qty |
+| inventario_raw.payload_json | conserva snapshot_id (respaldo batch/file/fila), SAFE_CAST cantidades, MERGE | inventario | on_hand_qty >= reserved_qty |
 | entregas_raw.payload_json | SAFE_CAST fechas y delivery_cost, MERGE por delivery_id | entregas | delivery_cost >= 0 |
 | benchmark_competidores_raw.payload_json | SAFE_CAST observed_at y competitor_price | benchmark_competidores | competitor_price > 0 |
 | eventos_locales_raw.payload_json | SAFE_CAST timestamps e impact_score | eventos_locales | impact_score entre 0 y 1 |
@@ -919,7 +921,7 @@ Fuente: `automatizacion/scripts/57_curar_seis_fuentes_y_gold.sh`.
 | pedidos LEFT JOIN entregas | COUNT DISTINCT, SUM, costo y tasa de entrega | CU03 KPIs |
 | pedidos + inventario | proyección por entity_type, entity_id y ingestion_mode | operational_mart |
 
-**Riesgo técnico identificado:** los JOIN por `sku_id` sin otras claves de ubicación o control de cardinalidad pueden multiplicar filas cuando existen múltiples tiendas, almacenes o snapshots para el mismo SKU. Antes de certificar métricas, se deben ejecutar pruebas de cardinalidad y conciliación por escenario.
+**Riesgo técnico identificado:** los JOIN por `sku_id` sin claves de ubicación ni cardinalidad controlada pueden multiplicar filas cuando existen varias tiendas, almacenes o snapshots para un SKU, afectando la confiabilidad de las métricas agregadas.
 
 
 ---
@@ -944,7 +946,7 @@ Fuente: `automatizacion/scripts/57_curar_seis_fuentes_y_gold.sh`.
 
 | Flujo | Correlación | Punto de entrada | Punto de salida | Verificación |
 |---|---|---|---|---|
-| Evento | event_id, trace_id | Pub/Sub | Bronze raw, Silver | coincidencia de identificador |
+| Evento | `event_id` raw y clave de negocio Silver | Pub/Sub | Bronze raw, Silver | correlación por pedido |
 | Batch | batch_id, file_id, source_row_number | GCS Landing | Bronze/Silver/Gold | conciliación de filas |
 | Forecast | DEMO_RUN_ID, model_version | Gold features | predictions, plan y model.json | versión y horizonte |
 | API | revisión Cloud Run, scenario_id | GET autenticado | JSON de tablas Gold | HTTP y count |
@@ -992,3 +994,166 @@ Fuente: `automatizacion/scripts/57_curar_seis_fuentes_y_gold.sh`.
 | `automatizacion/configuracion/runbook.json` | secuencia operativa y dependencias |
 
 Los contratos se mantienen vinculados al código fuente versionado. Los cambios incompatibles deben reflejarse en la versión contractual, el diccionario físico y las pruebas.
+
+
+---
+
+## Anexo K. Catálogo completo de scripts y utilidades
+
+El repositorio contiene **88 scripts shell** en `implementation/automatizacion/scripts/`, un script de despliegue adicional, 13 archivos Python de soporte y ejecución, y 2 definiciones SQL: **104 artefactos catalogados**. La finalidad se resume en una frase. La columna de componente solo indica una relación directa de creación, configuración, carga, ejecución, verificación o retiro; `—` significa que el archivo es general o no opera un componente GCP específico. Los pasos se agrupan por su etapa funcional y conservan el nombre exacto del archivo. En K.10, `common.sh` y `verificar_local.sh` completan los 88 scripts shell ya contabilizados; no se cuentan dos veces.
+
+### K.1 Control, fundación y streaming base
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`00_runbook.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/00_runbook.sh) | Comprueba que todos los pasos del manifiesto estén disponibles; no ejecuta cambios en GCP. | Runbook |
+| [`00_verificar_acceso.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/00_verificar_acceso.sh) | Valida configuración local, cuenta activa, proyecto, facturación y acceso antes del despliegue. | Proyecto e IAM |
+| [`01_habilitar_apis.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/01_habilitar_apis.sh) | Habilita las APIs requeridas por la fundación y los flujos configurados. | APIs de Google Cloud |
+| [`02_crear_storage.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/02_crear_storage.sh) | Crea o verifica buckets de Landing, Bronze, Silver, artefactos y modelos. | Cloud Storage |
+| [`03_crear_identidad_y_permisos.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/03_crear_identidad_y_permisos.sh) | Crea la identidad de ejecución y asigna permisos por recurso para los pipelines. | IAM y cuenta de servicio Dataflow |
+| [`04_crear_bigquery.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/04_crear_bigquery.sh) | Crea datasets y tablas base Bronze/Silver, además de los contratos Gold iniciales. | BigQuery |
+| [`05_crear_topicos_y_suscripciones.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/05_crear_topicos_y_suscripciones.sh) | Crea los tópicos y suscripciones para las rutas de eventos, persistencia y procesamiento. | Pub/Sub, BigQuery y Cloud Storage |
+| [`06_preparar_python.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/06_preparar_python.sh) | Prepara el entorno Python aislado y las dependencias del worker de procesamiento. | Entorno de Dataflow |
+| [`07_iniciar_dataflow.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/07_iniciar_dataflow.sh) | Despliega o inicia el pipeline Beam que consume el tópico y escribe entidades Silver. | Pub/Sub, Dataflow y BigQuery Silver |
+| [`08_publicar_evento.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/08_publicar_evento.sh) | Publica un evento de referencia que cumple el contrato de streaming. | Pub/Sub |
+| [`09_verificar_silver_y_bronze.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/09_verificar_silver_y_bronze.sh) | Comprueba la llegada del evento a Bronze y la transformación de su clave de negocio en Silver. | BigQuery Bronze y Silver |
+| [`10_materializar_gold.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/10_materializar_gold.sh) | Materializa productos Gold a partir de los datos Silver de la ejecución. | BigQuery Gold |
+| [`11_cancelar_dataflow.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/11_cancelar_dataflow.sh) | Cancela el job Dataflow registrado y conserva los datos ya escritos. | Dataflow |
+| [`12_ver_estado.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/12_ver_estado.sh) | Consulta el estado de los recursos y las ejecuciones registrados para el proyecto. | Inventario GCP |
+| [`13_generar_evidencia.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/13_generar_evidencia.sh) | Recopila evidencia técnica local del recorrido streaming y su estado. | — |
+
+### K.2 Batch, contratos y procesamiento distribuido
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`14_generar_fixtures.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/14_generar_fixtures.sh) | Genera archivos de prueba para los cuatro casos de uso batch. | — |
+| [`15_cargar_batch_bronze.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/15_cargar_batch_bronze.sh) | Carga archivos de Landing a tablas Bronze y conserva metadatos de procedencia. | Cloud Storage y BigQuery Bronze |
+| [`16_curar_batch_silver.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/16_curar_batch_silver.sh) | Normaliza registros Bronze y los integra en entidades Silver. | BigQuery Silver |
+| [`17_materializar_gold_casos.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/17_materializar_gold_casos.sh) | Calcula y publica los productos Gold CU01–CU04 desde las entidades preparadas. | BigQuery Gold |
+| [`18_crear_mart_operativo.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/18_crear_mart_operativo.sh) | Crea el Operational Mart para integrar resultados streaming y batch. | BigQuery Operational Mart |
+| [`19_verificar_casos_uso.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/19_verificar_casos_uso.sh) | Valida filas y resultados de CU01–CU04 y del mart operativo. | BigQuery Gold |
+| [`20_opcional_crear_workflow.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/20_opcional_crear_workflow.sh) | Crea la definición inicial de orquestación para el recorrido batch. | Cloud Workflows |
+| [`21_opcional_definir_storage_transfer.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/21_opcional_definir_storage_transfer.sh) | Define un job controlado de transferencia entre buckets sin iniciarlo. | Storage Transfer Service y Cloud Storage |
+| [`22_opcional_preparar_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/22_opcional_preparar_batch.sh) | Prepara un archivo batch de muestra en Landing para la carga y curación inicial. | Cloud Storage Landing y BigQuery Bronze |
+| [`23_opcional_crear_dataproc.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/23_opcional_crear_dataproc.sh) | Crea un clúster Dataproc de un nodo para ejecutar la demostración Spark. | Dataproc |
+| [`24_ejecutar_storage_transfer.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/24_ejecutar_storage_transfer.sh) | Inicia la transferencia definida y registra la solicitud para su verificación. | Storage Transfer Service |
+| [`25_actualizar_workflow_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/25_actualizar_workflow_batch.sh) | Despliega la versión vigente de la definición del Workflow batch. | Cloud Workflows |
+| [`26_ejecutar_workflow_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/26_ejecutar_workflow_batch.sh) | Inicia una ejecución del Workflow batch con el identificador de corrida configurado. | Cloud Workflows |
+| [`27_verificar_batch_orquestado.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/27_verificar_batch_orquestado.sh) | Comprueba el objeto transferido, el estado del Workflow y sus resultados batch. | Storage Transfer Service, Cloud Storage y Workflows |
+| [`28_generar_evidencia_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/28_generar_evidencia_batch.sh) | Recopila resultados y artefactos de evidencia de la ejecución batch. | — |
+| [`29_preflight_permisos_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/29_preflight_permisos_batch.sh) | Revisa permisos, dependencias y ubicación antes de ejecutar el procesamiento batch. | IAM, BigQuery y Workflows |
+| [`30_preparar_contratos_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/30_preparar_contratos_batch.sh) | Crea o verifica los contratos y esquemas necesarios para los dominios batch. | Contratos batch |
+| [`31_crear_tablas_batch_nuevas.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/31_crear_tablas_batch_nuevas.sh) | Crea tablas Bronze y Silver para los dominios batch incorporados. | BigQuery Bronze y Silver |
+| [`32_generar_fixtures_batch_nuevos.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/32_generar_fixtures_batch_nuevos.sh) | Genera archivos de prueba para los productores batch añadidos. | — |
+| [`33_cargar_bronze_batch_nuevos.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/33_cargar_bronze_batch_nuevos.sh) | Carga los archivos de los nuevos dominios en sus tablas Bronze. | BigQuery Bronze |
+| [`34_curar_silver_batch_nuevos.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/34_curar_silver_batch_nuevos.sh) | Transforma los dominios batch nuevos desde Bronze hacia Silver. | BigQuery Silver |
+| [`35_verificar_batch_nuevos.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/35_verificar_batch_nuevos.sh) | Verifica las cargas y entidades Silver de los nuevos dominios batch. | BigQuery Bronze y Silver |
+
+### K.3 Forecast y planificación
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`36_preflight_forecast.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/36_preflight_forecast.sh) | Valida contratos, permisos y dependencias del cálculo de demanda. | BigQuery y Cloud Storage |
+| [`37_crear_tablas_forecast.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/37_crear_tablas_forecast.sh) | Crea o comprueba las tablas de variables, predicciones y planificación. | BigQuery Gold |
+| [`38_generar_features_forecast.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/38_generar_features_forecast.sh) | Construye las variables de demanda requeridas por el cálculo de referencia. | BigQuery |
+| [`39_entrenar_forecast.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/39_entrenar_forecast.sh) | Registra el artefacto del modelo base y sus metadatos de ejecución. | BigQuery y Cloud Storage |
+| [`40_ejecutar_scoring_forecast.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/40_ejecutar_scoring_forecast.sh) | Calcula la proyección de demanda sobre las variables preparadas. | BigQuery |
+| [`41_materializar_planificacion_forecast.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/41_materializar_planificacion_forecast.sh) | Integra el scoring con el plan diario de reposición CU02. | BigQuery Gold |
+| [`42_verificar_forecast_evidencia.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/42_verificar_forecast_evidencia.sh) | Comprueba features, predicciones, plan y evidencia de Forecast. | BigQuery y Cloud Storage |
+
+### K.4 Insights en streaming
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`43_preflight_insights_streaming.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/43_preflight_insights_streaming.sh) | Valida contratos, APIs y permisos del flujo de Insights. | Pub/Sub, Dataflow y BigQuery |
+| [`44_crear_tablas_insights.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/44_crear_tablas_insights.sh) | Crea las tablas Gold de Insights y auditoría de procesamiento. | BigQuery Gold |
+| [`45_iniciar_dataflow_insights.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/45_iniciar_dataflow_insights.sh) | Inicia el pipeline Beam que procesa el tópico de Insights. | Pub/Sub, Dataflow y BigQuery |
+| [`46_publicar_evento_insights.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/46_publicar_evento_insights.sh) | Publica un evento de prueba al tópico dedicado a Insights. | Pub/Sub |
+| [`47_verificar_insights.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/47_verificar_insights.sh) | Comprueba los registros de Insights y auditoría generados en Gold. | BigQuery Gold |
+| [`48_cancelar_insights_evidencia.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/48_cancelar_insights_evidencia.sh) | Cancela el job de Insights y guarda evidencia de su cierre. | Dataflow |
+
+### K.5 Workflow completo y batch de seis fuentes
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`49_preflight_workflow_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/49_preflight_workflow_batch.sh) | Valida identidad, permisos y dependencias de la orquestación batch completa. | IAM y Cloud Workflows |
+| [`50_desplegar_workflow_batch_completo.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/50_desplegar_workflow_batch_completo.sh) | Despliega el Workflow que ejecuta las transformaciones Bronze–Silver–Gold y el mart. | Cloud Workflows |
+| [`51_ejecutar_workflow_batch_completo.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/51_ejecutar_workflow_batch_completo.sh) | Inicia el Workflow batch completo para una corrida identificada. | Cloud Workflows |
+| [`52_verificar_workflow_batch_completo.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/52_verificar_workflow_batch_completo.sh) | Comprueba el estado de la ejecución y los productos batch publicados. | Cloud Workflows y BigQuery |
+| [`53_generar_evidencia_workflow_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/53_generar_evidencia_workflow_batch.sh) | Guarda evidencia de la ejecución y sus resultados de orquestación. | — |
+| [`54_preflight_batch_productivo.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/54_preflight_batch_productivo.sh) | Valida contratos, permisos, tablas y ubicación para las seis fuentes. | Cloud Storage, BigQuery y Workflows |
+| [`55_generar_y_publicar_fixtures_batch.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/55_generar_y_publicar_fixtures_batch.sh) | Genera seis archivos de datos y los deposita en Landing. | Cloud Storage Landing |
+| [`56_cargar_seis_fuentes_bronze.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/56_cargar_seis_fuentes_bronze.sh) | Carga cada dominio desde Landing a su tabla Bronze correspondiente. | Cloud Storage y BigQuery Bronze |
+| [`57_curar_seis_fuentes_y_gold.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/57_curar_seis_fuentes_y_gold.sh) | Transforma los seis dominios a Silver y materializa CU01–CU03 y Operational Mart. | BigQuery Silver y Gold |
+| [`58_verificar_batch_productivo.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/58_verificar_batch_productivo.sh) | Valida conteos y resultados de las seis fuentes y cierra la evidencia batch. | BigQuery Bronze, Silver y Gold |
+
+### K.6 Operational Mart
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`59_preflight_operational_mart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/59_preflight_operational_mart.sh) | Valida contrato, datos, ubicación y permisos antes de integrar el mart. | BigQuery Operational Mart |
+| [`60_extender_esquema_operational_mart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/60_extender_esquema_operational_mart.sh) | Amplía el esquema del mart preservando los registros existentes. | BigQuery Operational Mart |
+| [`61_integrar_y_programar_operational_mart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/61_integrar_y_programar_operational_mart.sh) | Integra fuentes streaming y batch y configura el refresco programado. | BigQuery Scheduled Query |
+| [`62_verificar_operational_mart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/62_verificar_operational_mart.sh) | Ejecuta o comprueba el refresco y verifica las ocho fuentes del mart. | BigQuery Operational Mart |
+
+### K.7 API y reporting
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`63_preflight_api_retailsmart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/63_preflight_api_retailsmart.sh) | Valida dependencias y recursos requeridos por la API RetailSmart Insights. | Cloud Run, IAM y BigQuery |
+| [`64_permisos_api_retailsmart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/64_permisos_api_retailsmart.sh) | Configura la identidad de ejecución y permisos mínimos de lectura Gold. | IAM y cuenta de servicio Cloud Run |
+| [`65_desplegar_api_retailsmart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/65_desplegar_api_retailsmart.sh) | Construye y despliega la API privada de lectura de productos Gold. | Cloud Run |
+| [`66_verificar_api_retailsmart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/66_verificar_api_retailsmart.sh) | Prueba el servicio y sus cuatro rutas autenticadas de consumo. | Cloud Run y BigQuery Gold |
+| [`67_evidencia_api_retailsmart.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/67_evidencia_api_retailsmart.sh) | Registra el estado final y evidencia de las verificaciones de la API. | Cloud Run |
+| [`68_preflight_vistas_reporting.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/68_preflight_vistas_reporting.sh) | Valida contratos y tablas Gold que alimentan las vistas de reporting. | BigQuery |
+| [`69_crear_vistas_reporting.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/69_crear_vistas_reporting.sh) | Crea las vistas BigQuery destinadas al consumo analítico posterior. | BigQuery Views |
+
+### K.8 Gobierno, seguridad y observabilidad
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`70_preflight_gobierno_catalogo.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/70_preflight_gobierno_catalogo.sh) | Comprueba APIs, activos BigQuery y permisos para catálogo y linaje. | Knowledge Catalog y Data Lineage |
+| [`71_habilitar_catalogo_linaje.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/71_habilitar_catalogo_linaje.sh) | Habilita los servicios de catálogo y linaje de datos. | Knowledge Catalog y Data Lineage |
+| [`72_publicar_metadatos_catalogo.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/72_publicar_metadatos_catalogo.sh) | Publica descripciones y metadatos de activos Bronze, Silver y Gold. | Knowledge Catalog |
+| [`73_verificar_linaje_y_evidencia.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/73_verificar_linaje_y_evidencia.sh) | Verifica relaciones de linaje BigQuery y registra evidencia de gobierno. | BigQuery Data Lineage |
+| [`74_preflight_seguridad.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/74_preflight_seguridad.sh) | Valida contratos, APIs y permisos antes de aplicar controles de seguridad. | IAM, Cloud KMS, Secret Manager y DLP |
+| [`75_crear_kms_seguridad.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/75_crear_kms_seguridad.sh) | Crea la clave regional y configura el permiso requerido para cifrado. | Cloud KMS |
+| [`76_crear_secreto_cmek.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/76_crear_secreto_cmek.sh) | Crea un secreto regional cifrado con CMEK y asigna acceso al runtime. | Secret Manager y Cloud KMS |
+| [`77_configurar_dlp.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/77_configurar_dlp.sh) | Crea una plantilla DLP y ejecuta una inspección de datos de prueba. | Sensitive Data Protection (DLP) |
+| [`78_verificar_seguridad_evidencia.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/78_verificar_seguridad_evidencia.sh) | Comprueba los controles de seguridad aplicados y guarda evidencia. | Cloud KMS, Secret Manager y DLP |
+| [`79_preflight_auditoria_observabilidad.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/79_preflight_auditoria_observabilidad.sh) | Valida contratos, APIs y permisos para auditoría y monitoreo. | Cloud Logging, BigQuery y Cloud Monitoring |
+| [`80_crear_audit_store.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/80_crear_audit_store.sh) | Configura un sink de logs hacia el conjunto de auditoría en BigQuery. | Cloud Logging y BigQuery Audit Store |
+| [`81_crear_metricas_alertas.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/81_crear_metricas_alertas.sh) | Crea una métrica basada en logs y una política de alerta. | Cloud Logging y Cloud Monitoring |
+| [`82_crear_slo_api.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/82_crear_slo_api.sh) | Configura el servicio de monitoreo y el SLO de disponibilidad de la API. | Cloud Monitoring SLO |
+| [`83_verificar_observabilidad_evidencia.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/83_verificar_observabilidad_evidencia.sh) | Verifica sink, Audit Store, métricas, alertas y SLO y registra evidencia. | Cloud Logging, BigQuery y Cloud Monitoring |
+
+### K.9 Retiro controlado de recursos
+
+| Script | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`90_eliminar_computo_opcional.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/90_eliminar_computo_opcional.sh) | Elimina el Workflow o clúster Spark solicitado; conserva buckets, tablas y datos. | Cloud Workflows o Dataproc |
+
+### K.10 Herramientas, módulos de ejecución y definiciones SQL
+
+| Archivo | Finalidad principal | Componente relacionado |
+|---|---|---|
+| [`deploy.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/soluciones/productor-datos/deploy.sh) (`implementation/soluciones/productor-datos/deploy.sh`) | Configura identidad y permisos, construye la imagen y despliega el panel productor privado. | Cloud Run, Artifact Registry, Pub/Sub, Cloud Storage, BigQuery y Workflows |
+| [`common.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/common.sh) (`implementation/automatizacion/scripts/common.sh`) | Carga configuración local, deriva nombres de recursos y ofrece funciones compartidas a los pasos shell. | Configuración transversal GCP |
+| [`verificar_local.sh`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/scripts/verificar_local.sh) (`implementation/automatizacion/scripts/verificar_local.sh`) | Revisa sintaxis Bash, compila Python y ejecuta las pruebas automatizadas locales. | Validación local |
+| [`ensure.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/utilidades/ensure.py) (`implementation/automatizacion/utilidades/ensure.py`) | Compara el recurso existente con su contrato y solo lo crea si no existe. | Recursos GCP declarados por los scripts |
+| [`compare.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/utilidades/compare.py) (`implementation/automatizacion/utilidades/compare.py`) | Compara el evento esperado con el registro persistido en Bronze o Silver. | BigQuery Bronze y Silver |
+| [`generate_use_case_fixtures.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/utilidades/generate_use_case_fixtures.py) (`implementation/automatizacion/utilidades/generate_use_case_fixtures.py`) | Genera fixtures locales de pedidos, inventario, entregas y telemetría para los casos de uso. | Entradas de prueba batch |
+| [`generar_runbooks.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/docs/operacion/runbooks/generar_runbooks.py) (`implementation/docs/operacion/runbooks/generar_runbooks.py`) | Genera guías de validación por grupos a partir del manifiesto operativo. | Runbook |
+| [`gold_tables.sql`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/configuracion/contratos/gold_tables.sql) (`implementation/automatizacion/configuracion/contratos/gold_tables.sql`) | Define las tablas Gold CU01–CU04 y sus columnas de salida. | BigQuery Gold |
+| [`operational_mart.sql`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/automatizacion/configuracion/contratos/operational_mart.sql) (`implementation/automatizacion/configuracion/contratos/operational_mart.sql`) | Integra mediante MERGE las fuentes Silver en la estructura del Operational Mart. | BigQuery Operational Mart |
+| [`main.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/soluciones/api-insights/main.py) (`implementation/soluciones/api-insights/main.py`) | Implementa endpoints REST privados de lectura para productos Gold. | Cloud Run y BigQuery Gold |
+| [`batch_demo.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/soluciones/procesamiento-batch/batch_demo.py) (`implementation/soluciones/procesamiento-batch/batch_demo.py`) | Ejecuta una transformación Spark de demostración sobre archivos JSON. | Dataproc |
+| [`contract.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/soluciones/procesamiento-streaming/contract.py) (`implementation/soluciones/procesamiento-streaming/contract.py`) | Normaliza y valida el envelope común de eventos antes de procesarlo. | Contrato de eventos Pub/Sub |
+| [`insights_streaming.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/soluciones/procesamiento-streaming/insights_streaming.py) (`implementation/soluciones/procesamiento-streaming/insights_streaming.py`) | Consume eventos del tópico Insights y materializa resultados y auditoría con Beam. | Pub/Sub, Dataflow y BigQuery Gold |
+| [`setup.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/soluciones/procesamiento-streaming/setup.py) (`implementation/soluciones/procesamiento-streaming/setup.py`) | Empaqueta el módulo y dependencias Python del worker de streaming. | Artefacto de despliegue Dataflow |
+| [`streaming.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/soluciones/procesamiento-streaming/streaming.py) (`implementation/soluciones/procesamiento-streaming/streaming.py`) | Valida eventos Pub/Sub, enruta por tipo y escribe entidades Silver con Beam. | Pub/Sub, Dataflow y BigQuery Silver |
+| [`app.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/soluciones/productor-datos/app.py) (`implementation/soluciones/productor-datos/app.py`) | Sirve el panel productor y publica eventos o archivos batch por los puntos de entrada GCP. | Cloud Run, Pub/Sub, Cloud Storage, BigQuery y Workflows |
+| [`test_baseline.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/tests/test_baseline.py) (`implementation/tests/test_baseline.py`) | Verifica contratos y comportamientos base de las utilidades de automatización. | Pruebas de automatización |
+| [`test_retailsmart_api.py`](https://github.com/Codenid/lumina-retail-data-platform/blob/main/implementation/tests/test_retailsmart_api.py) (`implementation/tests/test_retailsmart_api.py`) | Comprueba las respuestas, validaciones y controles de acceso de la API. | API RetailSmart Insights |
+
+El código de configuración del runbook y los contratos de datos se referencia en los anexos anteriores. Las aplicaciones y workers se listan aquí como módulos de ejecución; no son pasos de aprovisionamiento.

@@ -7,7 +7,7 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from contract import normalize
 
 EVENT_PROFILES = {
-    'order_created': ('channel-apps', ('order_id', 'product_id', 'quantity')),
+    'order_created': ('channel-apps', ('order_id', 'order_line_id', 'product_id', 'quantity')),
     'cold_chain_reading': ('cold-room-sensors', ('asset_id', 'sensor_id', 'warehouse_id', 'metric_value', 'unit')),
     'inventory_level_changed': ('smart-shelves', ('snapshot_id', 'warehouse_id', 'sku_id', 'on_hand_qty', 'reserved_qty')),
     'store_sensor_reading': ('store-iot-sensors', ('asset_id', 'sensor_id', 'store_id', 'metric_value', 'unit')),

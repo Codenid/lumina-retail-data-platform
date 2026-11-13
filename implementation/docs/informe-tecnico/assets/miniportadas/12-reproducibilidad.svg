@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="341" viewBox="0 0 384 341" fill="none">
+  <rect width="384" height="341" fill="#fff"/>
+  <g stroke="#171717" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- versioned repository -->
+    <path d="M44 71h81l17 18h67v92H44z" fill="#fff"/>
+    <path d="M44 92h165v89H44z" fill="#fff"/>
+    <path d="m92 119-16 13 16 13m31-26 16 13-16 13m20 9h36"/>
+    <!-- branching execution flow -->
+    <path d="M209 135h27v-44h22m-22 44v44h22"/>
+    <path d="m251 83 10 8-10 8m0 44 10 8-10 8"/>
+    <!-- streaming node -->
+    <rect x="263" y="66" width="75" height="52" rx="7" fill="#fff"/>
+    <path d="M276 91h11l7-13 10 27 7-14h14"/>
+    <!-- batch node -->
+    <rect x="263" y="153" width="75" height="52" rx="7" fill="#fff"/>
+    <path d="M280 167h28l11 10v17h-39z"/>
+    <path d="M308 167v11h11m-30 5h22m-22 6h16"/>
+    <!-- verified output -->
+    <path d="M115 203v22h56v-22"/>
+    <path d="M143 226v17m-18 0h36"/>
+    <circle cx="143" cy="274" r="27" fill="#fff"/>
+    <path d="m130 274 9 9 18-20"/>
+    <!-- subtle guide lines -->
+    <path d="M263 231h75m-75 13h54m-248 71h150" stroke-width="3"/>
+  </g>
+  <g stroke="#6F8E8C" stroke-width="3" stroke-linecap="round">
+    <path d="M50 188h150m68 30h70"/>
+    <path d="m55 194 20 5m88-5 23 4m75 13 15 5m31-5 16 4"/>
+  </g>
+</svg>

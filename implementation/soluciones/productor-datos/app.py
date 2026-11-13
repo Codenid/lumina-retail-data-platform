@@ -130,7 +130,7 @@ def _synthetic_payload(domain: str, index: int, run_id: str) -> dict:
     if domain == "eventos_locales":
         return {"local_event_id": f"LOC-{run_id}-{index:09d}", "store_id": store, "event_type": ("FERIA_LOCAL", "FESTIVO", "CAMPAÑA")[index % 3], "start_at": now, "end_at": now, "impact_score": round((index % 100) / 100, 2), "source_uri": common["source_uri"]}
     if domain == "redes_sociales":
-        return {"post_id": f"POST-{run_id}-{index:09d}", "platform": ("instagram", "tiktok", "x")[index % 3], "published_at": now, "sku_id": sku, "sentiment_score": round(((index % 200) - 100) / 100, 2), "engagement_count": index % 10000, "text_hash": hashlib.sha256(f"{run_id}:{index}".encode()).hexdigest()}
+        return {"post_id": f"POST-{run_id}-{index:09d}", "platform": ("instagram", "tiktok", "x")[index % 3], "published_at": now, "sku_id": sku, "sentiment_score": round(((index % 200) - 100) / 100, 2), "engagement_count": index % 10000, "text_hash": hashlib.sha256(f"{run_id}:{index}".encode()).hexdigest(), "source_uri": f"generated://{run_id}/{domain}/{index}"}
     raise ValueError(f"Dominio no soportado: {domain}")
 
 
@@ -142,7 +142,7 @@ def _synthetic_event(producer_key: str, index: int, run_id: str, event_index: in
     store = f"STORE-{index % 8 + 1:03d}"
     warehouse = f"WH-{index % 4 + 1:03d}"
     if kind == "order":
-        payload = {"order_id": f"ORD-{run_id}-{index:09d}", "customer_id": f"CUS-{index % 9000000 + 1:07d}", "store_id": store, "warehouse_id": warehouse, "product_id": sku, "quantity": index % 5 + 1}
+        payload = {"order_id": f"ORD-{run_id}-{index:09d}", "order_line_id": f"LINE-{index:03d}", "customer_id": f"CUS-{index % 9000000 + 1:07d}", "store_id": store, "warehouse_id": warehouse, "product_id": sku, "quantity": index % 5 + 1}
     elif kind == "inventory":
         payload = {"snapshot_id": f"INV-{run_id}-{index:09d}", "warehouse_id": warehouse, "store_id": store, "sku_id": sku, "on_hand_qty": 20 + index % 500, "reserved_qty": index % 12, "effective_at": now}
     elif kind == "delivery":
@@ -152,7 +152,7 @@ def _synthetic_event(producer_key: str, index: int, run_id: str, event_index: in
     if kind == "telemetry":
         payload.pop("store_id", None) if not payload.get("store_id") else None
     event_index = event_index or index
-    return {"schema_version": "1.0.0", "simulation_id": run_id, "scenario_id": run_id, "producer_id": profile["producer_id"], "event_type": profile["event_type"], "event_id": f"evt-{run_id}-{event_index:09d}", "occurred_at": now, "emitted_at": now, "trace_id": f"trace-{run_id}-{event_index:09d}", "payload": payload}
+    return {"schema_version": "1.1.0", "simulation_id": run_id, "scenario_id": run_id, "producer_id": profile["producer_id"], "event_type": profile["event_type"], "event_id": f"evt-{run_id}-{event_index:09d}", "occurred_at": now, "emitted_at": now, "trace_id": f"trace-{run_id}-{event_index:09d}", "payload": payload}
 
 
 @app.get("/")

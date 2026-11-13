@@ -1,11 +1,11 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "description": "Payloads de entrada usados por la app productora; derivan de batch_sources.json, bigquery_schema.json y las transformaciones de Silver.",
   "batch_domains": {
     "pedidos": {
       "producer": "Sistema de Pedidos",
       "bronze_table": "pedidos_raw",
-      "required": ["order_id", "sku_id", "quantity"],
+      "required": ["order_id", "order_line_id", "sku_id", "quantity"],
       "effective_fields": ["occurred_at", "ts_creado", "effective_at"],
       "types": {"quantity": "integer"}
     },
@@ -58,7 +58,7 @@
     "supported_event_types": {
       "order_created": {
         "producer_id": "channel-apps",
-        "required_payload": ["order_id", "product_id", "quantity"],
+        "required_payload": ["order_id", "order_line_id", "product_id", "quantity"],
         "silver_table": "pedidos",
         "pipeline_status": "Dataflow a desplegar con rutas multi-dominio"
       },

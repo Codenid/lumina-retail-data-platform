@@ -51,6 +51,7 @@ function renderRun(run){
   const panel=$('#run-panel');panel.hidden=false;$('#run-heading').textContent=`${run.mode==='streaming'?'Streaming':'Batch'} · ${run.run_id}`;
   $('#run-status').textContent=run.status;$('#run-status').className=`status-pill ${run.status==='RUNNING'?'running':run.status==='FAILED'?'failed':'done'}`;
   $('#run-generated').textContent=fmt(run.generated||run.rows_loaded);$('#run-accepted').textContent=fmt(run.mode==='streaming'?run.accepted:run.rows_loaded);
+  $('#run-accepted-label').textContent=run.mode==='streaming'?'PUBLICADOS EN PUB/SUB':'CARGADOS EN BRONZE';
   $('#run-files').textContent=fmt(run.files_created);$('#run-failed').textContent=fmt(run.failed);
   const total=run.mode==='streaming'?run.rate_per_second*run.duration_seconds:Math.ceil(run.duration_seconds/run.interval_seconds)*run.batch_rows_per_file*run.producers.length;
   const done=run.mode==='streaming'?run.generated:run.rows_loaded;$('#run-progress').style.width=`${Math.min(100,total?done/total*100:0)}%`;
