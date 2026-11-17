@@ -74,3 +74,11 @@ STREAMING_RUN_ID=streaming-20261117 STREAMING_WINDOW_MINUTES=120 \
 El paso 89 actualiza CU01 riesgo, CU02 reposición, CU03 KPIs y CU04
 mantenimiento sin borrar históricos. Puede repetirse para la misma ventana y
 `run_id`.
+
+Para dejar la materialización automática al recrear la infraestructura, usar el
+paso 90. Despliega el Cloud Run Job y programa Cloud Scheduler cada cinco
+minutos, con una cuenta dedicada que solo lee Silver y escribe Gold:
+
+```bash
+bash automatizacion/scripts/90_programar_materializacion_streaming.sh
+```
