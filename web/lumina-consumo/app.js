@@ -41,7 +41,9 @@ async function connectLive(){
   await Promise.all(Object.keys(state.master).map(async kind=>{
     try{const response=await fetch(`${cfg.apiBaseUrl}/catalog/${kind}?limit=100`);if(!response.ok)throw new Error(`API ${response.status}`);state.master[kind]=(await response.json()).data||[];state.status[`catalog/${kind}`]=state.master[kind].length?'online':'amber'}catch(error){state.status[`catalog/${kind}`]=false;console.warn(`Catálogo ${kind} no disponible`,error)}}));
   if(state.master.stores.length){const byId=new Map(state.master.stores.map(store=>[store.store_id,store]));riskStores.forEach(row=>{const store=byId.get(row[0]);if(store)row[1]=store.zone_name})}
+  const kpiRows=state.live.kpis?.data||[];if(kpiRows.length){network.orders=kpiRows.reduce((sum,row)=>sum+Number(row.orders||0),0);network.units=kpiRows.reduce((sum,row)=>sum+Number(row.units||0),0)}
   window.LUMINA_LIVE=Object.values(state.status).some(Boolean);
   render();
+  document.querySelectorAll('.metric').forEach(card=>{const label=card.querySelector('.label')?.textContent||'';const value=card.querySelector('.value');if(!value)return;if(label.includes('Pedidos'))value.textContent=fmt(network.orders);if(label.includes('Unidades'))value.textContent=fmt(network.units)});
 }
 connectLive();

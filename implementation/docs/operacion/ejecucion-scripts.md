@@ -62,3 +62,15 @@ las cuatro salidas de consumo con:
 ```bash
 bash automatizacion/scripts/85_verificar_consumidores_demo.sh
 ```
+
+Para materializar eventos procesados por Dataflow desde Silver hacia los cuatro
+productos Gold, ejecutar el paso idempotente:
+
+```bash
+STREAMING_RUN_ID=streaming-20261117 STREAMING_WINDOW_MINUTES=120 \
+  bash automatizacion/scripts/89_materializar_streaming_gold.sh
+```
+
+El paso 89 actualiza CU01 riesgo, CU02 reposición, CU03 KPIs y CU04
+mantenimiento sin borrar históricos. Puede repetirse para la misma ventana y
+`run_id`.
