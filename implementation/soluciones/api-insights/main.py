@@ -40,9 +40,9 @@ TABLES = {
         "plan_date DESC,priority,sku_id",
         True,
     ),
-    "cu03_kpis_operativos": (
+        "cu03_kpis_operativos": (
         "scenario_id,period_date,channel,orders,units,conversion_rate,delivery_cost,sla_rate",
-        "period_date DESC",
+            "period_date DESC, IF(channel='streaming', 0, 1), scenario_id DESC",
         True,
     ),
     "cu04_alertas_mantenimiento": (
