@@ -55,8 +55,10 @@ gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$R
   --role=roles/bigquery.jobUser --condition=None >/dev/null
 bq add-iam-policy-binding --project_id="$PROJECT_ID" --member="serviceAccount:$RUNTIME_SA" \
   --role=roles/bigquery.dataEditor "$PROJECT_ID:$BRONZE_DATASET" >/dev/null
-gcloud workflows add-iam-policy-binding "$WORKFLOW_NAME" --project="$PROJECT_ID" --location="$REGION" \
-  --member="serviceAccount:$RUNTIME_SA" --role=roles/workflows.invoker >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$RUNTIME_SA" \
+  --role=roles/workflows.invoker \
+  --condition="title=Only ${WORKFLOW_NAME},description=Limit producer to the batch workflow,expression=resource.name==\\\"//workflows.googleapis.com/projects/${PROJECT_ID}/locations/${REGION}/workflows/${WORKFLOW_NAME}\\\"" \
+  --quiet >/dev/null
 
 if ! gcloud artifacts repositories describe "$REPOSITORY" --project="$PROJECT_ID" --location="$REGION" >/dev/null 2>&1; then
   gcloud artifacts repositories create "$REPOSITORY" --project="$PROJECT_ID" --location="$REGION" \
