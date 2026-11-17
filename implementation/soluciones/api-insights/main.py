@@ -1,4 +1,4 @@
-"""Private, read-only REST API for Gold Insights and operational products."""
+"""Private, read-only REST API for Gold Insights, operational products and master data."""
 
 from __future__ import annotations
 
@@ -52,6 +52,13 @@ TABLES = {
     ),
 }
 
+MASTER_TABLES = {
+    "stores": ("dim_tiendas", "store_id,store_name,zone_name,city,region_id,store_type,status", "store_name"),
+    "products": ("dim_productos", "sku_id,product_name,category_id,category_name,brand,unit,status", "product_name"),
+    "categories": ("dim_categorias", "category_id,category_name,department_name,status", "category_name"),
+    "warehouses": ("dim_almacenes", "warehouse_id,warehouse_name,city,region_id,status", "warehouse_name"),
+}
+
 _client = None
 
 
@@ -80,6 +87,14 @@ def fetch_rows(table: str, limit: int, scenario_id: str | None = None) -> list[d
         labels={"service": "retailsmart-api", "table": table.replace("_", "-")[:63]},
     )
     rows = _get_client().query(sql, job_config=job_config, location=BQ_LOCATION).result(timeout=60)
+    return [dict(row.items()) for row in rows]
+
+
+def fetch_master(kind: str, limit: int) -> list[dict]:
+    table, columns, order_by = MASTER_TABLES[kind]
+    sql = f"SELECT {columns} FROM `{PROJECT_ID}.{GOLD_DATASET}.{table}` WHERE status='ACTIVE' ORDER BY {order_by} LIMIT @limit"
+    config = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("limit", "INT64", limit)], maximum_bytes_billed=MAXIMUM_BYTES_BILLED)
+    rows = _get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)
     return [dict(row.items()) for row in rows]
 
 
@@ -116,6 +131,10 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         "/api/v1/kpis",
         "/api/v1/inventory-plans",
         "/api/v1/maintenance-risks",
+        "/api/v1/catalog/stores",
+        "/api/v1/catalog/products",
+        "/api/v1/catalog/categories",
+        "/api/v1/catalog/warehouses",
     }
     if path not in routes:
         return 404, {"error": "route_not_found"}
@@ -125,6 +144,10 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         return 400, {"error": "invalid_query", "message": str(exc)}
 
     try:
+        if path.startswith("/api/v1/catalog/"):
+            kind = path.rsplit("/", 1)[-1]
+            rows = fetch_master(kind, limit)
+            return 200, {"data": rows, "count": len(rows), "source": "master_data"}
         if path == "/api/v1/insights":
             insights = fetch_rows("insights_streaming", limit)
             risks = fetch_rows("cu01_riesgo_quiebre_despacho", limit, scenario_id)
@@ -157,6 +180,10 @@ def app(environ, start_response):
     method = environ.get("REQUEST_METHOD", "GET").upper()
     path = environ.get("PATH_INFO", "/")
     LOGGER.info("request method=%s path=%s", method, path)
+    cors_origin = os.getenv("CORS_ORIGIN", "*")
+    if method == "OPTIONS":
+        start_response("204 No Content", [("Access-Control-Allow-Origin", cors_origin), ("Access-Control-Allow-Methods", "GET, OPTIONS"), ("Access-Control-Allow-Headers", "Content-Type, Authorization")])
+        return [b""]
     if method != "GET":
         status, body = 405, {"error": "method_not_allowed"}
         headers = [("Allow", "GET")]
@@ -170,6 +197,9 @@ def app(environ, start_response):
             ("Content-Length", str(len(payload))),
             ("Cache-Control", "private, no-store"),
             ("X-Content-Type-Options", "nosniff"),
+            ("Access-Control-Allow-Origin", cors_origin),
+            ("Access-Control-Allow-Methods", "GET, OPTIONS"),
+            ("Access-Control-Allow-Headers", "Content-Type, Authorization"),
         ]
     )
     phrases = {200: "OK", 400: "Bad Request", 404: "Not Found", 405: "Method Not Allowed", 500: "Internal Server Error"}

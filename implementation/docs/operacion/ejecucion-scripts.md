@@ -45,3 +45,20 @@ recorrido `00–83` estén presentes sin ejecutar operaciones en GCP.
 Usa un `PREFIX` exclusivo por instalación y cambia `DEMO_RUN_ID` para una nueva
 demostración. Los recursos compartidos se verifican antes de crear; los datos
 de prueba y marcadores se aíslan por `DEMO_RUN_ID`.
+
+## Carga rápida para la demostración
+
+Después del preflight batch (`54`), preparar la carga inicial con:
+
+```bash
+bash automatizacion/scripts/84_cargar_demo_consumidores.sh
+```
+
+El script solo escribe en Landing. Genera datos deterministas y ocho snapshots
+de inventario para `SKU-001` en `STORE-001`, con stock decreciente; no mantiene
+un simulador activo. Continúa luego con Bronze/Silver/Gold (`56–58`) y valida
+las cuatro salidas de consumo con:
+
+```bash
+bash automatizacion/scripts/85_verificar_consumidores_demo.sh
+```
