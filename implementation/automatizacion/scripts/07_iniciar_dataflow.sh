@@ -32,7 +32,8 @@ cd "$ROOT"
  --silver_table="$PROJECT_ID:$SILVER_DATASET.pedidos" \
  --silver_inventory_table="$PROJECT_ID:$SILVER_DATASET.inventario" \
  --silver_delivery_table="$PROJECT_ID:$SILVER_DATASET.entregas" \
- --silver_telemetry_table="$PROJECT_ID:$SILVER_DATASET.telemetria_activos" 2>&1 | tee "$ROOT/state/$DEMO_RUN_ID/lanzamiento.log"
+ --silver_telemetry_table="$PROJECT_ID:$SILVER_DATASET.telemetria_activos" \
+ --insights_topic="projects/$PROJECT_ID/topics/$INSIGHTS_TOPIC" 2>&1 | tee "$ROOT/state/$DEMO_RUN_ID/lanzamiento.log"
 sed -n 's/^JOB_ID=//p' "$ROOT/state/$DEMO_RUN_ID/lanzamiento.log" > "$ROOT/state/$DEMO_RUN_ID/job_id.txt"
 [[ -s "$ROOT/state/$DEMO_RUN_ID/job_id.txt" ]] || { echo 'No se capturó ID. Revisa la consola Dataflow antes de repetir.'; exit 1; }
 echo 'Espera RUNNING y revisa el worker en Dataflow > Jobs. Luego ejecuta 08.'

@@ -82,16 +82,20 @@ def main():
     parser.add_argument('--silver_inventory_table', default=None)
     parser.add_argument('--silver_delivery_table', default=None)
     parser.add_argument('--silver_telemetry_table', default=None)
+    parser.add_argument('--insights_topic', default=None)
     args, beam_args = parser.parse_known_args()
     base_table = args.silver_table.rsplit('.', 1)[0]
     args.silver_inventory_table = args.silver_inventory_table or f'{base_table}.inventario'
     args.silver_delivery_table = args.silver_delivery_table or f'{base_table}.entregas'
     args.silver_telemetry_table = args.silver_telemetry_table or f'{base_table}.telemetria_activos'
+    args.insights_topic = args.insights_topic or args.input_subscription.replace('subscriptions/', 'topics/')
     pipeline = beam.Pipeline(options=PipelineOptions(beam_args))
-    routed = (pipeline | 'LeerPubSub' >> beam.io.ReadFromPubSub(subscription=args.input_subscription)
-                      | 'ValidarNormalizar' >> beam.ParDo(ValidateEvent())
-                      | 'EnrutarPorContrato' >> beam.Map(to_silver_route)
+    validated = (pipeline | 'LeerPubSub' >> beam.io.ReadFromPubSub(subscription=args.input_subscription)
+                         | 'ValidarNormalizar' >> beam.ParDo(ValidateEvent()))
+    routed = (validated | 'EnrutarPorContrato' >> beam.Map(to_silver_route)
                       | 'ExcluirEventoSinRuta' >> beam.Filter(bool))
+    (validated | 'PublicarInsightsRetail' >> beam.Map(lambda event: __import__('json').dumps(event, separators=(',', ':')).encode('utf-8'))
+            | 'InsightsRetailTopic' >> beam.io.WriteToPubSub(args.insights_topic))
     orders, inventory, deliveries, telemetry = routed | 'SepararDominios' >> beam.Partition(lambda row, n: row[0], 4)
     writer = dict(method=beam.io.gcp.bigquery.WriteToBigQuery.Method.STREAMING_INSERTS,
                   create_disposition=beam.io.gcp.bigquery.BigQueryDisposition.CREATE_NEVER,
