@@ -98,6 +98,30 @@ def fetch_master(kind: str, limit: int) -> list[dict]:
     return [dict(row.items()) for row in rows]
 
 
+def fetch_streaming_kpis() -> list[dict]:
+    """Consolida las filas incrementales del Gold Insights Writer.
+
+    Las filas cuyo scenario_id empieza por streaming- son snapshots históricos
+    de materializaciones anteriores y no deben volver a sumarse.
+    """
+    sql = f"""
+    SELECT 'streaming-live' AS scenario_id, CURRENT_DATE() AS period_date,
+           'streaming' AS channel, COALESCE(SUM(orders), 0) AS orders,
+           COALESCE(SUM(units), 0) AS units,
+           CAST(NULL AS FLOAT64) AS conversion_rate,
+           CAST(NULL AS NUMERIC) AS delivery_cost,
+           CAST(NULL AS FLOAT64) AS sla_rate
+    FROM `{PROJECT_ID}.{GOLD_DATASET}.cu03_kpis_operativos`
+    WHERE channel = 'streaming'
+      AND period_date = CURRENT_DATE()
+      AND NOT STARTS_WITH(scenario_id, 'streaming-')
+    """
+    config = bigquery.QueryJobConfig(maximum_bytes_billed=MAXIMUM_BYTES_BILLED,
+                                     labels={"service": "retailsmart-api", "table": "cu03-kpis-live"})
+    rows = _get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)
+    return [dict(row.items()) for row in rows]
+
+
 def _to_json_default(value):
     if isinstance(value, (datetime, date)):
         return value.isoformat()
@@ -157,6 +181,10 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
                 "counts": {"streaming_insights": len(insights), "stockout_risks": len(risks)},
                 "scenario_id": scenario_id,
             }
+
+        if path == "/api/v1/kpis":
+            rows = fetch_streaming_kpis()
+            return 200, {"data": rows, "count": len(rows), "source_table": "cu03_kpis_operativos", "scenario_id": scenario_id}
 
         table_by_route = {
             "/api/v1/kpis": "cu03_kpis_operativos",
