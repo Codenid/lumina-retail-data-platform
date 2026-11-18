@@ -15,7 +15,9 @@ IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${SERVICE}:latest"
 heading 'Preflight de los puntos de entrada existentes'
 gcloud pubsub topics describe "$TOPIC" --project="$PROJECT_ID" >/dev/null
 gcloud storage buckets describe "gs://$LANDING" >/dev/null
-gcloud workflows describe "$WORKFLOW_NAME" --project="$PROJECT_ID" --location="$REGION" >/dev/null
+if ! gcloud workflows describe "$WORKFLOW_NAME" --project="$PROJECT_ID" --location="$REGION" >/dev/null 2>&1; then
+  echo 'Advertencia: Workflow batch aún no está desplegado; la interfaz streaming se habilitará y batch quedará pendiente.' >&2
+fi
 if ACTIVE_STREAM_JOB="$(gcloud dataflow jobs list --project="$PROJECT_ID" --region="$REGION" --status=active --format='value(name)' 2>/dev/null | awk -v prefix="${PREFIX}-silver-" 'index($0,prefix)==1 {print; exit}')" \
   && [[ -n "$ACTIVE_STREAM_JOB" ]]; then
   echo "Consumidor Streaming activo: $ACTIVE_STREAM_JOB"
@@ -24,13 +26,8 @@ else
 fi
 bq show --project_id="$PROJECT_ID" "$PROJECT_ID:$BRONZE_DATASET.pedidos_raw" >/dev/null
 for domain in pedidos inventario entregas benchmark_competidores eventos_locales redes_sociales; do
-  bq show --project_id="$PROJECT_ID" "$PROJECT_ID:$BRONZE_DATASET.${domain}_raw" >/dev/null
-  bq show --project_id="$PROJECT_ID" "$PROJECT_ID:$SILVER_DATASET.$domain" >/dev/null
+  bq show --project_id="$PROJECT_ID" "$PROJECT_ID:$BRONZE_DATASET.${domain}_raw" >/dev/null || echo "Advertencia: falta Bronze $domain; batch de ese dominio quedará pendiente."
 done
-for table in cu01_riesgo_quiebre_despacho cu02_plan_reposicion cu03_kpis_operativos operational_mart; do
-  bq show --project_id="$PROJECT_ID" "$PROJECT_ID:$GOLD_DATASET.$table" >/dev/null
-done
-bq show --project_id="$PROJECT_ID" --format=prettyjson "$PROJECT_ID:$GOLD_DATASET.operational_mart" | python3 -c 'import json,sys; names={f["name"] for f in json.load(sys.stdin)["schema"]["fields"]}; required={"scenario_id","entity_type","entity_id","sku_id","store_id","warehouse_id","quantity","status","observed_at","ingestion_mode","source_domain","correlation_id","measure_value","attributes"}; missing=required-names; sys.exit("Operational mart incompleto: "+str(sorted(missing)) if missing else 0)'
 
 gcloud services enable run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com \
   pubsub.googleapis.com storage.googleapis.com bigquery.googleapis.com workflows.googleapis.com \
@@ -53,12 +50,15 @@ gcloud storage buckets add-iam-policy-binding "gs://$LANDING" \
   --member="serviceAccount:$RUNTIME_SA" --role=roles/storage.legacyBucketReader >/dev/null
 gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$RUNTIME_SA" \
   --role=roles/bigquery.jobUser --condition=None >/dev/null
-bq add-iam-policy-binding --project_id="$PROJECT_ID" --member="serviceAccount:$RUNTIME_SA" \
-  --role=roles/bigquery.dataEditor "$PROJECT_ID:$BRONZE_DATASET" >/dev/null
-gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$RUNTIME_SA" \
-  --role=roles/workflows.invoker \
-  --condition="title=Only ${WORKFLOW_NAME},description=Limit producer to the batch workflow,expression=resource.name==\\\"//workflows.googleapis.com/projects/${PROJECT_ID}/locations/${REGION}/workflows/${WORKFLOW_NAME}\\\"" \
-  --quiet >/dev/null
+echo "ACL Bronze de $RUNTIME_SA se administra por dataset con el cliente BigQuery"
+if gcloud workflows describe "$WORKFLOW_NAME" --project="$PROJECT_ID" --location="$REGION" >/dev/null 2>&1; then
+  gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$RUNTIME_SA" \
+    --role=roles/workflows.invoker \
+    --condition="title=Only ${WORKFLOW_NAME},description=Limit producer to the batch workflow,expression=resource.name==\\\"//workflows.googleapis.com/projects/${PROJECT_ID}/locations/${REGION}/workflows/${WORKFLOW_NAME}\\\"" \
+    --quiet >/dev/null
+else
+  echo 'Advertencia: no se asigna invocación de Workflow hasta que exista el workflow batch.' >&2
+fi
 
 if ! gcloud artifacts repositories describe "$REPOSITORY" --project="$PROJECT_ID" --location="$REGION" >/dev/null 2>&1; then
   gcloud artifacts repositories create "$REPOSITORY" --project="$PROJECT_ID" --location="$REGION" \
