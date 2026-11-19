@@ -180,6 +180,27 @@ def fetch_stock_risk(limit: int) -> dict:
     return {'metrics': metrics, 'trend': run(trend_sql, 'stock-risk-trend'), 'concentration': run(concentration_sql, 'stock-risk-concentration')}
 
 
+def fetch_forecast_replenishment(limit: int) -> dict:
+    base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu02_plan_reposicion`"
+    metrics_sql = f"""SELECT COUNT(*) AS plan_rows, COUNT(DISTINCT sku_id) AS forecast_skus,
+      COUNTIF(priority='HIGH') AS high_priority, COALESCE(SUM(forecast_qty),0) AS forecast_qty,
+      COALESCE(SUM(recommended_qty),0) AS recommended_qty FROM {base}"""
+    trend_sql = f"""SELECT CAST(plan_date AS STRING) AS plan_date, COUNT(*) AS plan_rows,
+      COUNTIF(priority='HIGH') AS high_priority, SUM(forecast_qty) AS forecast_qty,
+      SUM(recommended_qty) AS recommended_qty FROM {base}
+      GROUP BY plan_date ORDER BY plan_date LIMIT @limit"""
+    concentration_sql = f"""SELECT p.warehouse_id, COALESCE(w.warehouse_name,w.city,'Sin almacén') AS warehouse_name,
+      COALESCE(d.category_name,'Sin categoría') AS category_name, COUNT(*) AS plan_rows,
+      COUNTIF(p.priority='HIGH') AS high_priority, SUM(p.recommended_qty) AS recommended_qty
+      FROM {base} p LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_almacenes` w USING(warehouse_id)
+      LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` d USING(sku_id)
+      GROUP BY p.warehouse_id, warehouse_name, category_name ORDER BY plan_rows DESC LIMIT @limit"""
+    def run(sql, label):
+        cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
+        return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
+    return {'metrics': run(metrics_sql, 'forecast-metrics')[0], 'trend': run(trend_sql, 'forecast-trend'), 'concentration': run(concentration_sql, 'forecast-concentration')}
+
+
 def fetch_streaming_kpis() -> list[dict]:
     """Consolida las filas incrementales del Gold Insights Writer.
 
@@ -242,6 +263,7 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         "/api/v1/quality",
         "/api/v1/summary",
         "/api/v1/stock-risk",
+        "/api/v1/forecast",
         "/api/v1/catalog/stores",
         "/api/v1/catalog/products",
         "/api/v1/catalog/categories",
@@ -302,6 +324,8 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
             return 200, {"data": fetch_summary(), "source_table": "Gold dimensions + cu01_riesgo_quiebre_despacho + cu03_kpis_operativos"}
         if path == "/api/v1/stock-risk":
             return 200, {"data": fetch_stock_risk(limit), "source_table": "cu01_riesgo_quiebre_despacho + Gold dimensions"}
+        if path == "/api/v1/forecast":
+            return 200, {"data": fetch_forecast_replenishment(limit), "source_table": "cu02_plan_reposicion + Gold dimensions"}
 
         if path == "/api/v1/kpis":
             rows = fetch_streaming_kpis()
