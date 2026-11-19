@@ -210,26 +210,18 @@ def fetch_forecast_replenishment(limit: int) -> dict:
     return {'metrics': run(metrics_sql, 'forecast-metrics')[0], 'trend': run(trend_sql, 'forecast-trend'), 'concentration': run(concentration_sql, 'forecast-concentration')}
 
 def fetch_operations_analytics(limit: int) -> dict:
-    base = f"`{PROJECT_ID}.{GOLD_DATASET}.operational_mart`"
-    metrics_sql = f"""SELECT COUNT(*) AS total_records,
-      COALESCE(SUM(quantity),0) AS units,
-      COUNTIF(UPPER(status) IN ('DELIVERED','DELIVERED_ON_TIME','COMPLETED')) AS delivered,
-      COUNTIF(UPPER(status) IN ('AT_RISK','FAILED','LATE','CANCELLED')) AS attention,
-      COUNTIF(status IS NOT NULL) AS status_records
-      FROM {base}"""
-    trend_sql = f"""SELECT CAST(DATE(observed_at) AS STRING) AS period_date,
-      COUNT(*) AS orders, COALESCE(SUM(quantity),0) AS units,
-      COUNTIF(UPPER(status) IN ('DELIVERED','DELIVERED_ON_TIME','COMPLETED')) AS delivered,
-      COUNTIF(UPPER(status) IN ('AT_RISK','FAILED','LATE','CANCELLED')) AS attention
-      FROM {base} WHERE observed_at IS NOT NULL
-      GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
+    base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu03_kpis_operativos`"
+    metrics_sql = f"""SELECT COALESCE(SUM(orders),0) AS total_records,
+      COALESCE(SUM(units),0) AS units, COALESCE(AVG(sla_rate),0) AS sla_rate,
+      0 AS attention FROM {base}"""
+    trend_sql = f"""SELECT CAST(period_date AS STRING) AS period_date,
+      SUM(orders) AS orders, SUM(units) AS units,
+      0 AS delivered, 0 AS attention
+      FROM {base} GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
     def run(sql, label):
         cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
         return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
     metrics = run(metrics_sql, 'operations-metrics')[0]
-    total = int(metrics.get('status_records') or 0)
-    delivered = int(metrics.get('delivered') or 0)
-    metrics['sla_rate'] = round(delivered / total, 4) if total else None
     return {'metrics': metrics, 'trend': run(trend_sql, 'operations-trend')}
 
 
@@ -360,7 +352,7 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         if path == "/api/v1/forecast":
             return 200, {"data": fetch_forecast_replenishment(limit), "source_table": "cu02_plan_reposicion + Gold dimensions"}
         if path == "/api/v1/operations-analytics":
-            return 200, {"data": fetch_operations_analytics(limit), "source_table": "operational_mart"}
+            return 200, {"data": fetch_operations_analytics(limit), "source_table": "cu03_kpis_operativos"}
 
         if path == "/api/v1/kpis":
             rows = fetch_streaming_kpis()
