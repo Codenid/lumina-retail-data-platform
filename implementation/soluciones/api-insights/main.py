@@ -128,6 +128,36 @@ def fetch_quality() -> dict:
     return dict(row.items()) if row else {"records": 0, "populated": 0, "last_observed": None}
 
 
+def fetch_summary() -> dict:
+    sql = f"""
+    WITH stores AS (SELECT COUNT(*) AS total_stores FROM `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` WHERE status='ACTIVE'),
+    products AS (SELECT COUNT(*) AS total_products FROM `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` WHERE status='ACTIVE'),
+    risks AS (SELECT at_risk_skus AS at_risk, critical_skus AS critical FROM `{PROJECT_ID}.{GOLD_DATASET}.agg_inventario_resumen`),
+    customers AS (SELECT active_customers FROM `{PROJECT_ID}.{GOLD_DATASET}.agg_clientes_mensual` ORDER BY period_date DESC LIMIT 1),
+    categories AS (
+      SELECT ARRAY_AGG(STRUCT(name, risk_count) ORDER BY risk_count DESC LIMIT 10) AS items
+      FROM (
+        SELECT p.category_name AS name, COUNT(*) AS risk_count
+        FROM `{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho` r
+        JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
+        WHERE p.status='ACTIVE'
+        GROUP BY p.category_name
+      )
+    ),
+    kpis AS (
+      SELECT COALESCE(SUM(orders),0) AS orders, COALESCE(SUM(units),0) AS units
+      FROM `{PROJECT_ID}.{GOLD_DATASET}.cu03_kpis_operativos`
+      WHERE channel='streaming' AND period_date=CURRENT_DATE()
+    )
+    SELECT stores.total_stores, products.total_products, risks.at_risk, risks.critical,
+           kpis.orders, kpis.units, customers.active_customers, categories.items AS categories
+    FROM stores CROSS JOIN products CROSS JOIN risks CROSS JOIN kpis CROSS JOIN customers CROSS JOIN categories
+    """
+    config = bigquery.QueryJobConfig(maximum_bytes_billed=MAXIMUM_BYTES_BILLED)
+    row = next(iter(_get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)), None)
+    return dict(row.items()) if row else {}
+
+
 def fetch_streaming_kpis() -> list[dict]:
     """Consolida las filas incrementales del Gold Insights Writer.
 
@@ -188,6 +218,7 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         "/api/v1/operations",
         "/api/v1/market",
         "/api/v1/quality",
+        "/api/v1/summary",
         "/api/v1/catalog/stores",
         "/api/v1/catalog/products",
         "/api/v1/catalog/categories",
@@ -244,6 +275,8 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
                 quality = {"records": len(rows), "populated": len(rows), "last_observed": rows[0].get("period_date") if rows else None}
                 source = "cu03_kpis_operativos"
             return 200, {"data": quality, "source_table": source}
+        if path == "/api/v1/summary":
+            return 200, {"data": fetch_summary(), "source_table": "Gold dimensions + cu01_riesgo_quiebre_despacho + cu03_kpis_operativos"}
 
         if path == "/api/v1/kpis":
             rows = fetch_streaming_kpis()
