@@ -158,6 +158,28 @@ def fetch_summary() -> dict:
     return dict(row.items()) if row else {}
 
 
+def fetch_stock_risk(limit: int) -> dict:
+    base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho`"
+    metrics_sql = f"""SELECT COUNT(*) AS risk_rows, COUNT(DISTINCT sku_id) AS monitored_skus,
+      COUNTIF(risk_score>=0.5 OR STARTS_WITH(recommended_action,'REPOSICIONAR')) AS critical_rows,
+      COUNT(DISTINCT store_id) AS affected_stores, ROUND(AVG(available_qty),2) AS avg_available_qty
+      FROM {base}"""
+    trend_sql = f"""SELECT CAST(DATE(as_of) AS STRING) AS period_date, COUNT(*) AS risk_rows,
+      COUNTIF(risk_score>=0.5 OR STARTS_WITH(recommended_action,'REPOSICIONAR')) AS critical_rows
+      FROM {base} GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
+    concentration_sql = f"""SELECT r.store_id, COALESCE(s.zone_name,s.city,'Sin zona') AS zone_name,
+      COALESCE(p.category_name,'Sin categoría') AS category_name, COUNT(*) AS risk_rows,
+      COUNTIF(r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR')) AS critical_rows
+      FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
+      LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
+      GROUP BY r.store_id, zone_name, category_name ORDER BY risk_rows DESC LIMIT @limit"""
+    def run(sql, label):
+        cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
+        return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
+    metrics = run(metrics_sql, 'stock-risk-metrics')[0]
+    return {'metrics': metrics, 'trend': run(trend_sql, 'stock-risk-trend'), 'concentration': run(concentration_sql, 'stock-risk-concentration')}
+
+
 def fetch_streaming_kpis() -> list[dict]:
     """Consolida las filas incrementales del Gold Insights Writer.
 
@@ -219,6 +241,7 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         "/api/v1/market",
         "/api/v1/quality",
         "/api/v1/summary",
+        "/api/v1/stock-risk",
         "/api/v1/catalog/stores",
         "/api/v1/catalog/products",
         "/api/v1/catalog/categories",
@@ -277,6 +300,8 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
             return 200, {"data": quality, "source_table": source}
         if path == "/api/v1/summary":
             return 200, {"data": fetch_summary(), "source_table": "Gold dimensions + cu01_riesgo_quiebre_despacho + cu03_kpis_operativos"}
+        if path == "/api/v1/stock-risk":
+            return 200, {"data": fetch_stock_risk(limit), "source_table": "cu01_riesgo_quiebre_despacho + Gold dimensions"}
 
         if path == "/api/v1/kpis":
             rows = fetch_streaming_kpis()
