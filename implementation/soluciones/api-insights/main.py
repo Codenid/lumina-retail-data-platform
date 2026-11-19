@@ -161,15 +161,15 @@ def fetch_summary() -> dict:
 def fetch_stock_risk(limit: int) -> dict:
     base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho`"
     metrics_sql = f"""SELECT COUNT(*) AS risk_rows, COUNT(DISTINCT sku_id) AS monitored_skus,
-      COUNTIF(risk_score>=0.5 OR STARTS_WITH(recommended_action,'REPOSICIONAR')) AS critical_rows,
+      COUNT(DISTINCT IF(risk_score>=0.5 OR STARTS_WITH(recommended_action,'REPOSICIONAR'), sku_id, NULL)) AS critical_rows,
       COUNT(DISTINCT store_id) AS affected_stores, ROUND(AVG(available_qty),2) AS avg_available_qty
       FROM {base}"""
-    trend_sql = f"""SELECT CAST(DATE(as_of) AS STRING) AS period_date, COUNT(*) AS risk_rows,
-      COUNTIF(risk_score>=0.5 OR STARTS_WITH(recommended_action,'REPOSICIONAR')) AS critical_rows
+    trend_sql = f"""SELECT CAST(DATE(as_of) AS STRING) AS period_date, COUNT(DISTINCT sku_id) AS risk_rows,
+      COUNT(DISTINCT IF(risk_score>=0.5 OR STARTS_WITH(recommended_action,'REPOSICIONAR'), sku_id, NULL)) AS critical_rows
       FROM {base} GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
     concentration_sql = f"""SELECT r.store_id, COALESCE(s.zone_name,s.city,'Sin zona') AS zone_name,
-      COALESCE(p.category_name,'Sin categoría') AS category_name, COUNT(*) AS risk_rows,
-      COUNTIF(r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR')) AS critical_rows
+      COALESCE(p.category_name,'Sin categoría') AS category_name, COUNT(DISTINCT r.sku_id) AS risk_rows,
+      COUNT(DISTINCT IF(r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR'), r.sku_id, NULL)) AS critical_rows
       FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
       LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
       GROUP BY r.store_id, zone_name, category_name ORDER BY risk_rows DESC LIMIT @limit"""
@@ -179,7 +179,8 @@ def fetch_stock_risk(limit: int) -> dict:
       ROUND(r.risk_score,3) AS risk_score, r.recommended_action, CAST(r.as_of AS STRING) AS as_of
       FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
       LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
-      WHERE r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR')
+      WHERE (r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR'))
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY r.store_id, r.sku_id ORDER BY r.as_of DESC) = 1
       ORDER BY r.risk_score DESC, r.available_qty ASC LIMIT 50000"""
     def run(sql, label):
         cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
