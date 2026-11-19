@@ -173,11 +173,19 @@ def fetch_stock_risk(limit: int) -> dict:
       FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
       LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
       GROUP BY r.store_id, zone_name, category_name ORDER BY risk_rows DESC LIMIT @limit"""
+    critical_sql = f"""SELECT r.sku_id, COALESCE(p.product_name,r.sku_id) AS product_name,
+      COALESCE(p.category_name,'Sin categoría') AS category_name, r.store_id,
+      COALESCE(s.zone_name,s.city,'Sin zona') AS zone_name, r.available_qty,
+      ROUND(r.risk_score,3) AS risk_score, r.recommended_action, CAST(r.as_of AS STRING) AS as_of
+      FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
+      LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
+      WHERE r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR')
+      ORDER BY r.risk_score DESC, r.available_qty ASC LIMIT @limit"""
     def run(sql, label):
         cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
         return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
     metrics = run(metrics_sql, 'stock-risk-metrics')[0]
-    return {'metrics': metrics, 'trend': run(trend_sql, 'stock-risk-trend'), 'concentration': run(concentration_sql, 'stock-risk-concentration')}
+    return {'metrics': metrics, 'trend': run(trend_sql, 'stock-risk-trend'), 'concentration': run(concentration_sql, 'stock-risk-concentration'), 'critical_skus': run(critical_sql, 'stock-risk-critical-skus')}
 
 
 def fetch_forecast_replenishment(limit: int) -> dict:
