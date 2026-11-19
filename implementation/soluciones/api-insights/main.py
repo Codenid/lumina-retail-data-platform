@@ -21,7 +21,10 @@ GOLD_DATASET = os.environ.get("GOLD_DATASET", "")
 BQ_LOCATION = os.environ.get("BQ_LOCATION", "us-central1")
 DEFAULT_ROWS = 25
 MAX_ROWS = 100
-MAXIMUM_BYTES_BILLED = 52_428_800
+# The streaming insights table is append-only and has grown beyond 50 MiB.
+# Keep a bounded per-request ceiling while allowing the live Gold endpoint to
+# read its current window without returning query_failed.
+MAXIMUM_BYTES_BILLED = 104_857_600  # live-insights-read-v2
 SCENARIO_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 TABLES = {
@@ -49,6 +52,11 @@ TABLES = {
         "scenario_id,asset_id,sensor_id,warehouse_id,anomaly_type,severity,metric_value,occurred_at",
         "occurred_at DESC",
         True,
+    ),
+    "operational_mart": (
+        "entity_type,entity_id,sku_id,store_id,warehouse_id,quantity,status,observed_at,ingestion_mode,source_domain,measure_value",
+        "observed_at DESC",
+        False,
     ),
 }
 
@@ -96,6 +104,28 @@ def fetch_master(kind: str, limit: int) -> list[dict]:
     config = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("limit", "INT64", limit)], maximum_bytes_billed=MAXIMUM_BYTES_BILLED)
     rows = _get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)
     return [dict(row.items()) for row in rows]
+
+
+def fetch_market(limit: int) -> list[dict]:
+    sql = f"""
+    SELECT entity_type,entity_id,sku_id,store_id,status,observed_at,source_domain,measure_value
+    FROM `{PROJECT_ID}.{GOLD_DATASET}.operational_mart`
+    WHERE entity_type IN ('COMPETITOR_PRICE','LOCAL_EVENT','SOCIAL_POST')
+    ORDER BY observed_at DESC LIMIT @limit
+    """
+    config = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("limit", "INT64", limit)], maximum_bytes_billed=MAXIMUM_BYTES_BILLED)
+    return [dict(row.items()) for row in _get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)]
+
+
+def fetch_quality() -> dict:
+    sql = f"""
+    SELECT COUNT(*) AS records, COUNTIF(status IS NOT NULL) AS populated,
+           MAX(observed_at) AS last_observed
+    FROM `{PROJECT_ID}.{GOLD_DATASET}.operational_mart`
+    """
+    config = bigquery.QueryJobConfig(maximum_bytes_billed=MAXIMUM_BYTES_BILLED)
+    row = next(iter(_get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)), None)
+    return dict(row.items()) if row else {"records": 0, "populated": 0, "last_observed": None}
 
 
 def fetch_streaming_kpis() -> list[dict]:
@@ -155,6 +185,9 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         "/api/v1/kpis",
         "/api/v1/inventory-plans",
         "/api/v1/maintenance-risks",
+        "/api/v1/operations",
+        "/api/v1/market",
+        "/api/v1/quality",
         "/api/v1/catalog/stores",
         "/api/v1/catalog/products",
         "/api/v1/catalog/categories",
@@ -173,14 +206,44 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
             rows = fetch_master(kind, limit)
             return 200, {"data": rows, "count": len(rows), "source": "master_data"}
         if path == "/api/v1/insights":
-            insights = fetch_rows("insights_streaming", limit)
-            risks = fetch_rows("cu01_riesgo_quiebre_despacho", limit, scenario_id)
+            try:
+                risks = fetch_rows("cu01_riesgo_quiebre_despacho", limit, scenario_id)
+            except Exception:
+                LOGGER.exception("stockout risk feed unavailable")
+                risks = []
+            # CU01 must remain available even while the append-only insight
+            # feed is being compacted. The feed is optional for the stock and
+            # market consumers; a failed feed query must not take down Gold.
+            try:
+                insights = fetch_rows("insights_streaming", limit)
+            except Exception:
+                LOGGER.exception("streaming insight feed unavailable")
+                insights = []
             return 200, {
                 "streaming_insights": insights,
                 "stockout_risks": risks,
                 "counts": {"streaming_insights": len(insights), "stockout_risks": len(risks)},
                 "scenario_id": scenario_id,
             }
+        if path == "/api/v1/market":
+            try:
+                rows = fetch_market(limit)
+                source = "operational_mart"
+            except Exception:
+                LOGGER.exception("operational mart market feed unavailable")
+                rows = fetch_rows("insights_streaming", limit)
+                source = "insights_streaming"
+            return 200, {"data": rows, "count": len(rows), "source_table": source}
+        if path == "/api/v1/quality":
+            try:
+                quality = fetch_quality()
+                source = "operational_mart"
+            except Exception:
+                LOGGER.exception("operational mart quality feed unavailable")
+                rows = fetch_streaming_kpis()
+                quality = {"records": len(rows), "populated": len(rows), "last_observed": rows[0].get("period_date") if rows else None}
+                source = "cu03_kpis_operativos"
+            return 200, {"data": quality, "source_table": source}
 
         if path == "/api/v1/kpis":
             rows = fetch_streaming_kpis()
@@ -190,13 +253,22 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
             "/api/v1/kpis": "cu03_kpis_operativos",
             "/api/v1/inventory-plans": "cu02_plan_reposicion",
             "/api/v1/maintenance-risks": "cu04_alertas_mantenimiento",
+            "/api/v1/operations": "operational_mart",
         }
         table = table_by_route[path]
-        rows = fetch_rows(table, limit, scenario_id)
+        try:
+            rows = fetch_rows(table, limit, scenario_id)
+            source_table = table
+        except Exception:
+            if path != "/api/v1/operations":
+                raise
+            LOGGER.exception("operational mart order feed unavailable")
+            rows = fetch_streaming_kpis()
+            source_table = "cu03_kpis_operativos"
         return 200, {
             "data": rows,
             "count": len(rows),
-            "source_table": table,
+            "source_table": source_table,
             "scenario_id": scenario_id,
         }
     except Exception:
