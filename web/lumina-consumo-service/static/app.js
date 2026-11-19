@@ -69,8 +69,21 @@ async function connectLive(){
   const cfg=window.LUMINA_CONFIG||{};
   if(!cfg.apiBaseUrl)return;
   const endpoints=['summary','stock-risk','forecast','insights','kpis','inventory-plans','maintenance-risks','operations','market','quality'];
+  const payloadHasData=payload=>{
+    const data=payload?.data;
+    if(payload?.count>0)return true;
+    if(Array.isArray(data))return data.length>0;
+    if(data&&typeof data==='object'){
+      const metrics=data.metrics||{};
+      if(Object.values(metrics).some(value=>Number(value)>0))return true;
+      if(['trend','concentration','streaming_insights','stockout_risks'].some(key=>Array.isArray(data[key])&&data[key].length>0))return true;
+      if(Object.values(data).some(value=>Array.isArray(value)&&value.length>0))return true;
+      if(Object.values(data).some(value=>typeof value==='number'&&value>0))return true;
+    }
+    return Boolean(payload?.counts&&Object.values(payload.counts).some(value=>Number(value)>0));
+  };
   await Promise.all(endpoints.map(async endpoint=>{
-    try{const scenarioQuery=endpoint==='kpis'?'':`&scenario_id=${encodeURIComponent(cfg.scenarioId||'')}`;const response=await fetch(`${cfg.apiBaseUrl}/${endpoint}?limit=25${scenarioQuery}`);if(!response.ok)throw new Error(`API ${response.status}`);state.live[endpoint]=await response.json();const payload=state.live[endpoint];const count=payload.count ?? payload.data?.length ?? payload.data?.records ?? payload.data?.total_stores ?? payload.counts?.stockout_risks ?? 0;state.status[endpoint]=count>0?'online':'amber'}catch(error){state.status[endpoint]=false;console.warn(`Ruta ${endpoint} no disponible`,error)}}));
+    try{const scenarioQuery=endpoint==='kpis'?'':`&scenario_id=${encodeURIComponent(cfg.scenarioId||'')}`;const response=await fetch(`${cfg.apiBaseUrl}/${endpoint}?limit=25${scenarioQuery}`);if(!response.ok)throw new Error(`API ${response.status}`);state.live[endpoint]=await response.json();state.status[endpoint]=payloadHasData(state.live[endpoint])?'online':'amber'}catch(error){state.status[endpoint]=false;console.warn(`Ruta ${endpoint} no disponible`,error)}}));
   await Promise.all(Object.keys(state.master).map(async kind=>{
     try{const response=await fetch(`${cfg.apiBaseUrl}/catalog/${kind}?limit=100`);if(!response.ok)throw new Error(`API ${response.status}`);state.master[kind]=(await response.json()).data||[];state.status[`catalog/${kind}`]=state.master[kind].length?'online':'amber'}catch(error){state.status[`catalog/${kind}`]=false;console.warn(`Catálogo ${kind} no disponible`,error)}}));
   if(state.master.stores.length){const byId=new Map(state.master.stores.map(store=>[store.store_id,store]));riskStores.forEach(row=>{const store=byId.get(row[0]);if(store)row[1]=store.zone_name})}
