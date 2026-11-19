@@ -180,7 +180,7 @@ def fetch_stock_risk(limit: int) -> dict:
       FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
       LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
       WHERE r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR')
-      ORDER BY r.risk_score DESC, r.available_qty ASC LIMIT @limit"""
+      ORDER BY r.risk_score DESC, r.available_qty ASC LIMIT 50000"""
     def run(sql, label):
         cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
         return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
