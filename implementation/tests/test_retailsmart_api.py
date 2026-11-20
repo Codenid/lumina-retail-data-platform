@@ -27,8 +27,10 @@ def request(path, query="", method="GET"):
 
 
 class RetailSmartApiTests(unittest.TestCase):
+    @patch.object(main, "fetch_streaming_kpis", return_value=[{"sample": 1}])
+    @patch.object(main, "fetch_maintenance_events", return_value=[{"sample": 1}])
     @patch.object(main, "fetch_rows", return_value=[{"sample": 1}])
-    def test_four_business_routes_return_gold_data(self, fetch_rows):
+    def test_four_business_routes_return_gold_data(self, fetch_rows, fetch_maintenance_events, fetch_streaming_kpis):
         expectations = {
             "/api/v1/insights": {"insights_streaming", "cu01_riesgo_quiebre_despacho"},
             "/api/v1/kpis": {"cu03_kpis_operativos"},
@@ -40,7 +42,14 @@ class RetailSmartApiTests(unittest.TestCase):
                 result, payload = request(path, "limit=5&scenario_id=batch-001")
                 self.assertEqual(result["status"], "200 OK")
                 self.assertTrue(payload)
-                self.assertEqual({call.args[0] for call in fetch_rows.call_args_list}, tables)
+                if path == "/api/v1/kpis":
+                    fetch_streaming_kpis.assert_called_once()
+                    fetch_streaming_kpis.reset_mock()
+                elif path == "/api/v1/maintenance-risks":
+                    fetch_maintenance_events.assert_called_once_with(5)
+                    fetch_maintenance_events.reset_mock()
+                else:
+                    self.assertEqual({call.args[0] for call in fetch_rows.call_args_list}, tables)
                 fetch_rows.reset_mock()
 
     @patch.object(main, "fetch_rows", return_value=[])

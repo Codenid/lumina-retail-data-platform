@@ -21,7 +21,7 @@
 \hypersetup{pdftitle={Lumina Retail: El retail que ve, decide y actúa en tiempo real},pdfauthor={RetailSmart Global},pdflang={es-PE},bookmarksnumbered=true}
 \input{parametros.tex}
 \newcommand{\KnowledgeCatalog}{\href{https://console.cloud.google.com/dataplex/studio?referrer=search\&authuser=0\&project=prj-codenid}{Knowledge Catalog}}
-\graphicspath{{../report-resources/figures/portadas/}{../report-resources/figures/vinetas/}{../report-resources/figures/apoyo/}{../report-resources/figures/arquitectura/}}
+\graphicspath{{../report-resources/figures/portadas/}{../report-resources/figures/vinetas/}{../report-resources/figures/apoyo/}{../report-resources/figures/arquitectura/}{../report-resources/figures/sistema/}}
 \newcommand{\ArquitecturaFinal}{../architecture/generated/arquitectura-archimate.pdf}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
@@ -198,8 +198,9 @@ Acelerar la entrega.\par}
 \toprule
 \textbf{Versión} & \textbf{Hito} & \textbf{Actualización} \\
 \midrule
-1.0 & Propuesta inicial de solución & Diagnóstico del negocio, alcance de Lumina Retail y arquitectura objetivo. \\
-2.0 & Propuesta integral consolidada & Se consolidan arquitectura y flujos E2E, contratos de datos, implementación reproducible y estimación de costos GCP para evaluación gerencial. \\
+1.0 & Definición de la propuesta & Diagnóstico de las necesidades del negocio, alcance de la iniciativa y resultados esperados para Lumina Retail. \\
+2.0 & Consolidación de la solución & Integración de las capacidades necesarias para mejorar la visibilidad operativa, anticipar riesgos y respaldar decisiones, junto con la evaluación de viabilidad y costos. \\
+3.0 & Casos de uso y valor para el negocio & Incorporación del apartado funcional de casos de uso y su anexo de evidencias. Se documenta el caso de anticipación del riesgo de quiebre de stock, desde la necesidad hasta la acción recomendada y el beneficio esperado para el negocio. \\
 \bottomrule
 \end{tabularx}
 \clearpage
@@ -777,6 +778,27 @@ Pico y caída de procesamiento & Tiempo de respuesta, backlog y recuperación & 
 \end{tabularx}
 \end{table}
 
+\subsection{Casos de uso validados y valor para el negocio}
+Los casos de uso de Lumina Retail se presentan a partir de la decisión que permiten tomar y del valor que aportan a la operación. En esta sección se mantiene una síntesis ejecutiva; el recorrido funcional, el ejemplo representativo y la evidencia visual se desarrollan en el anexo~\ref{anexo:casos-uso}. Solo se incorporan al informe los casos cuya historia, indicadores y decisión de negocio han sido revisados de manera integral.
+
+El primer caso validado aborda la anticipación del riesgo de quiebre de stock. Sobre 3.200 productos monitoreados en 32 tiendas, la solución concentra la atención en 96 productos con riesgo y prioriza 31 casos críticos. Esto permite pasar de una revisión general del catálogo a una cola concreta de decisiones, ordenada por tienda, disponibilidad y urgencia de reposición.
+
+\begin{table}[H]
+\caption{Síntesis funcional del caso de uso de riesgo de stock}\label{tab:caso-riesgo-stock}
+\small
+\begin{tabularx}{\linewidth}{@{}P{.24\linewidth}Y@{}}\toprule
+Elemento & Resultado para el negocio\\\midrule
+Problema atendido & Dificultad para anticipar productos próximos a agotarse y priorizar la reposición entre tiendas.\\
+Cobertura & 3.200 productos monitoreados en 32 tiendas.\\
+Situación priorizada & 96 productos con riesgo de quiebre y 31 en condición crítica.\\
+Decisión habilitada & Definir qué producto atender primero, en qué tienda y con qué urgencia.\\
+Indicador de evolución & Reducción cercana al 5\,\% de productos en riesgo frente al día anterior.\\
+Valor esperado & Menor exposición a ventas perdidas, revisión operativa más focalizada y mejor uso del esfuerzo de reposición.\\\bottomrule
+\end{tabularx}
+\end{table}
+
+Los siguientes casos de uso se incorporarán a esta síntesis y al anexo correspondiente cuando su recorrido funcional, sus indicadores y su contribución al negocio hayan sido revisados con el mismo nivel de consistencia.
+
 % ================================================================
 \AperturaCapitulo{Conclusiones y próximos pasos}{13_conclusiones.png}{sec:conclusiones}
 \subsection{Correspondencia entre solución y problemática}
@@ -804,6 +826,31 @@ La prioridad es completar un recorrido de inventario y pedidos antes de expandir
 % ================================================================
 \AperturaAnexos{14_anexos.png}
 \clearpage\appendix
+\Seccion{Casos de uso y valor para el negocio}\label{anexo:casos-uso}
+Este anexo reúne el desarrollo funcional de los casos de uso validados de Lumina Retail. Cada caso se explica desde la necesidad que atiende, la lectura que ofrece a los responsables de negocio, la decisión que habilita y el valor que aporta. La evidencia visual permite relacionar los indicadores con el recorrido disponible para el usuario.
+
+\subsection{Caso de uso 1: anticipación del riesgo de quiebre de stock}
+\textbf{Necesidad del negocio.} Lumina Retail administra un catálogo de 3.200 productos distribuido en 32 tiendas. Revisar manualmente todo el catálogo dificulta reconocer a tiempo qué productos pueden agotarse, dónde se concentra la exposición y cuáles requieren atención inmediata. La necesidad consiste en reducir el universo de revisión y ordenar las decisiones de reposición antes de que la falta de inventario afecte la venta.
+
+\textbf{Lectura de la operación.} El caso de uso evalúa el catálogo completo y concentra la atención en 96 productos con riesgo de quiebre, equivalentes al 3\,\% del catálogo monitoreado. Dentro de este grupo, 31 productos presentan una condición crítica. La evolución diaria muestra una reducción de 101 a 96 productos en riesgo, cercana al 5\,\% frente al día anterior, lo que permite observar si la exposición está mejorando.
+
+\textbf{Recorrido de decisión.} El responsable comienza con la cobertura general del catálogo, identifica el número de productos en riesgo y separa los casos críticos. A continuación, revisa las tiendas con mayor concentración, abre el detalle de los productos afectados y consulta su disponibilidad, porcentaje de riesgo y acción recomendada. El recorrido termina con una prioridad clara para reposición y despacho.
+
+\textbf{Ejemplo representativo.} En la tienda de Miraflores se identifica un producto de la categoría Congelados con 9 unidades disponibles y un riesgo de quiebre del 99\,\%. La acción indicada es priorizar su reposición y despacho antes de que la disponibilidad afecte la venta. La misma vista permite reconocer otros productos críticos de la tienda y comparar su urgencia.
+
+\textbf{Valor para Lumina Retail.} El principal beneficio es convertir la revisión de 3.200 productos en una cola de 31 decisiones críticas. Los responsables de inventario pueden enfocar su atención en las tiendas y productos con mayor exposición, actuar con anticipación y utilizar mejor el esfuerzo de reposición. El seguimiento diario permite comprobar si las acciones adoptadas reducen el riesgo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.94\linewidth,height=.72\textheight,keepaspectratio]{Caso de uso 1 anticipación del riesgo de quiebre de stock.jpeg}
+\caption{Caso de uso 1: vista funcional para anticipar el riesgo de quiebre de stock.}\label{fig:caso-uso-riesgo-stock}
+\Fuente{Lumina Retail, vista de riesgo de stock}
+\end{figure}
+
+\subsection{Incorporación de los siguientes casos}
+Los casos de forecast y reposición, operación de pedidos y entregas, y mantenimiento de activos se añadirán a este anexo una vez completada su validación funcional. Cada incorporación mantendrá la misma estructura: necesidad, lectura de la operación, recorrido de decisión, ejemplo representativo, valor para el negocio y pantalla del caso.
+
+\clearpage
 \Seccion{Matriz de fuentes, verticales, componentes e indicadores}\label{anexo:matriz}
 \begin{table}[H]
 \caption{Trazabilidad de las fuentes al resultado}\label{tab:fuente-vertical}

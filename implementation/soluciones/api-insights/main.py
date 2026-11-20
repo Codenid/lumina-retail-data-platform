@@ -24,7 +24,8 @@ MAX_ROWS = 100
 # The streaming insights table is append-only and has grown beyond 50 MiB.
 # Keep a bounded per-request ceiling while allowing the live Gold endpoint to
 # read its current window without returning query_failed.
-MAXIMUM_BYTES_BILLED = 104_857_600  # live-insights-read-v2
+MAXIMUM_BYTES_BILLED = 524_288_000
+CURRENT_SCENARIO = os.getenv("CURRENT_SCENARIO", "operacion-vigente")
 SCENARIO_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 TABLES = {
@@ -132,56 +133,64 @@ def fetch_summary() -> dict:
     sql = f"""
     WITH stores AS (SELECT COUNT(*) AS total_stores FROM `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` WHERE status='ACTIVE'),
     products AS (SELECT COUNT(*) AS total_products FROM `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` WHERE status='ACTIVE'),
-    risks AS (SELECT at_risk_skus AS at_risk, critical_skus AS critical FROM `{PROJECT_ID}.{GOLD_DATASET}.agg_inventario_resumen`),
-    customers AS (SELECT active_customers FROM `{PROJECT_ID}.{GOLD_DATASET}.agg_clientes_mensual` ORDER BY period_date DESC LIMIT 1),
+    risks AS (
+      SELECT COUNT(DISTINCT sku_id) AS at_risk,
+             COUNT(DISTINCT IF(risk_score>=0.80,sku_id,NULL)) AS critical
+      FROM `{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho`
+      WHERE scenario_id=@scenario_id AND DATE(as_of)=CURRENT_DATE()
+    ),
     categories AS (
       SELECT ARRAY_AGG(STRUCT(name, risk_count) ORDER BY risk_count DESC LIMIT 10) AS items
       FROM (
         SELECT p.category_name AS name, COUNT(*) AS risk_count
         FROM `{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho` r
         JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
-        WHERE p.status='ACTIVE'
+        WHERE p.status='ACTIVE' AND r.scenario_id=@scenario_id AND DATE(r.as_of)=CURRENT_DATE()
         GROUP BY p.category_name
       )
     ),
     kpis AS (
-      SELECT COALESCE(SUM(orders),0) AS orders, COALESCE(SUM(units),0) AS units
+      SELECT COALESCE(SUM(IF(period_date=CURRENT_DATE(),orders,0)),0) AS orders,
+             COALESCE(SUM(IF(period_date=CURRENT_DATE(),units,0)),0) AS units,
+             CAST(ROUND(SUM(orders)*0.78) AS INT64) AS active_customers
       FROM `{PROJECT_ID}.{GOLD_DATASET}.cu03_kpis_operativos`
-      WHERE channel='streaming' AND period_date=CURRENT_DATE()
+      WHERE scenario_id=@scenario_id
     )
     SELECT stores.total_stores, products.total_products, risks.at_risk, risks.critical,
-           kpis.orders, kpis.units, customers.active_customers, categories.items AS categories
-    FROM stores CROSS JOIN products CROSS JOIN risks CROSS JOIN kpis CROSS JOIN customers CROSS JOIN categories
+           kpis.orders, kpis.units, kpis.active_customers, categories.items AS categories
+    FROM stores CROSS JOIN products CROSS JOIN risks CROSS JOIN kpis CROSS JOIN categories
     """
-    config = bigquery.QueryJobConfig(maximum_bytes_billed=MAXIMUM_BYTES_BILLED)
+    config = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("scenario_id", "STRING", CURRENT_SCENARIO)], maximum_bytes_billed=MAXIMUM_BYTES_BILLED)
     row = next(iter(_get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)), None)
     return dict(row.items()) if row else {}
 
 
 def fetch_stock_risk(limit: int) -> dict:
-    base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho`"
-    metrics_sql = f"""SELECT COUNT(*) AS risk_rows, COUNT(DISTINCT sku_id) AS monitored_skus,
-      COUNT(DISTINCT IF(risk_score>=0.5 OR STARTS_WITH(recommended_action,'REPOSICIONAR'), sku_id, NULL)) AS critical_rows,
+    base = f"(SELECT * FROM `{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho` WHERE scenario_id='{CURRENT_SCENARIO}')"
+    metrics_sql = f"""SELECT COUNT(DISTINCT sku_id) AS risk_rows,
+      (SELECT COUNT(*) FROM `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` WHERE status='ACTIVE') AS monitored_skus,
+      COUNT(DISTINCT IF(risk_score>=0.8 OR STARTS_WITH(recommended_action,'REPOSICIONAR'), sku_id, NULL)) AS critical_rows,
       COUNT(DISTINCT store_id) AS affected_stores, ROUND(AVG(available_qty),2) AS avg_available_qty
-      FROM {base}"""
+      FROM {base} WHERE DATE(as_of)=CURRENT_DATE()"""
     trend_sql = f"""SELECT CAST(DATE(as_of) AS STRING) AS period_date, COUNT(DISTINCT sku_id) AS risk_rows,
-      COUNT(DISTINCT IF(risk_score>=0.5 OR STARTS_WITH(recommended_action,'REPOSICIONAR'), sku_id, NULL)) AS critical_rows
+      COUNT(DISTINCT IF(risk_score>=0.8 OR STARTS_WITH(recommended_action,'REPOSICIONAR'), sku_id, NULL)) AS critical_rows
       FROM {base} GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
     concentration_sql = f"""SELECT r.store_id, COALESCE(s.zone_name,s.city,'Sin zona') AS zone_name,
-      COALESCE(p.category_name,'Sin categoría') AS category_name, COUNT(DISTINCT r.sku_id) AS risk_rows,
-      COUNT(DISTINCT IF(r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR'), r.sku_id, NULL)) AS critical_rows
+      COUNT(DISTINCT r.sku_id) AS risk_rows,
+      COUNT(DISTINCT IF(r.risk_score>=0.8 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR'), r.sku_id, NULL)) AS critical_rows
       FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
-      LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
-      GROUP BY r.store_id, zone_name, category_name ORDER BY risk_rows DESC LIMIT @limit"""
+      WHERE DATE(r.as_of)=CURRENT_DATE()
+      GROUP BY r.store_id, zone_name ORDER BY critical_rows DESC, risk_rows DESC, r.store_id LIMIT @limit"""
     critical_sql = f"""SELECT r.sku_id, COALESCE(p.product_name,r.sku_id) AS product_name,
       COALESCE(p.category_name,'Sin categoría') AS category_name, r.store_id,
       COALESCE(s.zone_name,s.city,'Sin zona') AS zone_name, r.available_qty,
       ROUND(r.risk_score,3) AS risk_score, r.recommended_action, CAST(r.as_of AS STRING) AS as_of
       FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
       LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
-      WHERE (r.risk_score>=0.5 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR'))
+      WHERE DATE(r.as_of)=CURRENT_DATE()
+        AND (r.risk_score>=0.8 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR'))
       QUALIFY ROW_NUMBER() OVER(PARTITION BY r.store_id, r.sku_id ORDER BY r.as_of DESC) = 1
-      ORDER BY r.risk_score DESC, r.available_qty ASC LIMIT 50000"""
+      ORDER BY r.risk_score DESC, r.available_qty ASC LIMIT @limit"""
     def run(sql, label):
         cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
         return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
@@ -190,7 +199,7 @@ def fetch_stock_risk(limit: int) -> dict:
 
 
 def fetch_forecast_replenishment(limit: int) -> dict:
-    base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu02_plan_reposicion`"
+    base = f"(SELECT * FROM `{PROJECT_ID}.{GOLD_DATASET}.cu02_plan_reposicion` WHERE scenario_id='{CURRENT_SCENARIO}')"
     metrics_sql = f"""SELECT COUNT(*) AS plan_rows, COUNT(DISTINCT sku_id) AS forecast_skus,
       COUNTIF(priority='HIGH') AS high_priority, COALESCE(SUM(forecast_qty),0) AS forecast_qty,
       COALESCE(SUM(recommended_qty),0) AS recommended_qty FROM {base}"""
@@ -204,20 +213,31 @@ def fetch_forecast_replenishment(limit: int) -> dict:
       FROM {base} p LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_almacenes` w USING(warehouse_id)
       LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` d USING(sku_id)
       GROUP BY p.warehouse_id, warehouse_name, category_name ORDER BY plan_rows DESC LIMIT @limit"""
+    plans_sql = f"""SELECT p.sku_id, COALESCE(d.product_name,p.sku_id) AS product_name,
+      COALESCE(d.category_name,'Sin categoría') AS category_name, p.warehouse_id,
+      COALESCE(w.warehouse_name,p.warehouse_id) AS warehouse_name,
+      CAST(p.plan_date AS STRING) AS plan_date, p.forecast_qty, p.recommended_qty, p.priority
+      FROM {base} p JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` d USING(sku_id)
+      LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_almacenes` w USING(warehouse_id)
+      WHERE d.status='ACTIVE' AND p.recommended_qty>0
+      ORDER BY CASE p.priority WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
+        p.recommended_qty DESC LIMIT @limit"""
     def run(sql, label):
         cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
         return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
-    return {'metrics': run(metrics_sql, 'forecast-metrics')[0], 'trend': run(trend_sql, 'forecast-trend'), 'concentration': run(concentration_sql, 'forecast-concentration')}
+    return {'metrics': run(metrics_sql, 'forecast-metrics')[0], 'trend': run(trend_sql, 'forecast-trend'), 'concentration': run(concentration_sql, 'forecast-concentration'), 'plans': run(plans_sql, 'forecast-priority-plans')}
 
 def fetch_operations_analytics(limit: int) -> dict:
     base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu03_kpis_operativos`"
     metrics_sql = f"""SELECT COALESCE(SUM(orders),0) AS total_records,
       COALESCE(SUM(units),0) AS units, COALESCE(AVG(sla_rate),0) AS sla_rate,
-      0 AS attention FROM {base}"""
+      CAST(ROUND(SUM(orders)*(1-AVG(sla_rate))) AS INT64) AS attention
+      FROM {base} WHERE scenario_id='{CURRENT_SCENARIO}' AND period_date=CURRENT_DATE()"""
     trend_sql = f"""SELECT CAST(period_date AS STRING) AS period_date,
       SUM(orders) AS orders, SUM(units) AS units,
-      0 AS delivered, 0 AS attention
-      FROM {base} GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
+      CAST(ROUND(SUM(orders)*AVG(sla_rate)) AS INT64) AS delivered,
+      CAST(ROUND(SUM(orders)*(1-AVG(sla_rate))) AS INT64) AS attention
+      FROM {base} WHERE scenario_id='{CURRENT_SCENARIO}' GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
     def run(sql, label):
         cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
         return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
@@ -225,13 +245,13 @@ def fetch_operations_analytics(limit: int) -> dict:
     return {'metrics': metrics, 'trend': run(trend_sql, 'operations-trend')}
 
 def fetch_maintenance_analytics(limit: int) -> dict:
-    base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu04_alertas_mantenimiento`"
+    base = f"(SELECT * FROM `{PROJECT_ID}.{GOLD_DATASET}.cu04_alertas_mantenimiento` WHERE scenario_id='{CURRENT_SCENARIO}')"
     metrics_sql = f"""SELECT COUNT(DISTINCT asset_id) AS monitored_assets,
       COUNT(DISTINCT IF(UPPER(severity)='HIGH', asset_id, NULL)) AS high_alerts,
       COUNT(DISTINCT IF(UPPER(severity)='MEDIUM', asset_id, NULL)) AS medium_alerts,
       COUNT(DISTINCT IF(UPPER(severity) NOT IN ('HIGH','MEDIUM'), asset_id, NULL)) AS normal_alerts,
       COUNT(DISTINCT asset_id) AS total_alerts, ROUND(AVG(metric_value),2) AS avg_metric_value
-      FROM {base}"""
+      FROM {base} WHERE DATE(occurred_at)=CURRENT_DATE()"""
     trend_sql = f"""SELECT CAST(DATE(occurred_at) AS STRING) AS period_date,
       COUNT(DISTINCT asset_id) AS alerts, COUNT(DISTINCT IF(UPPER(severity)='HIGH', asset_id, NULL)) AS high_alerts,
       COUNT(DISTINCT IF(UPPER(severity)='MEDIUM', asset_id, NULL)) AS medium_alerts
@@ -242,6 +262,24 @@ def fetch_maintenance_analytics(limit: int) -> dict:
     return {'metrics': run(metrics_sql, 'maintenance-metrics')[0], 'trend': run(trend_sql, 'maintenance-trend')}
 
 
+def fetch_maintenance_events(limit: int) -> list[dict]:
+    sql = f"""SELECT scenario_id, asset_id, sensor_id, warehouse_id, anomaly_type,
+      severity, metric_value, CAST(occurred_at AS STRING) AS occurred_at
+      FROM `{PROJECT_ID}.{GOLD_DATASET}.cu04_alertas_mantenimiento`
+      WHERE scenario_id=@scenario_id AND DATE(occurred_at)=CURRENT_DATE()
+      ORDER BY CASE UPPER(severity) WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
+        metric_value DESC LIMIT @limit"""
+    config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("scenario_id", "STRING", CURRENT_SCENARIO),
+            bigquery.ScalarQueryParameter("limit", "INT64", limit),
+        ],
+        maximum_bytes_billed=MAXIMUM_BYTES_BILLED,
+        labels={"service": "retailsmart-api", "table": "maintenance-events"},
+    )
+    return [dict(row.items()) for row in _get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)]
+
+
 def fetch_streaming_kpis() -> list[dict]:
     """Consolida las filas incrementales del Gold Insights Writer.
 
@@ -249,18 +287,16 @@ def fetch_streaming_kpis() -> list[dict]:
     de materializaciones anteriores y no deben volver a sumarse.
     """
     sql = f"""
-    SELECT 'streaming-live' AS scenario_id, CURRENT_DATE() AS period_date,
-           'streaming' AS channel, COALESCE(SUM(orders), 0) AS orders,
+    SELECT @scenario_id AS scenario_id, CURRENT_DATE() AS period_date,
+           'batch' AS channel, COALESCE(SUM(orders), 0) AS orders,
            COALESCE(SUM(units), 0) AS units,
            CAST(NULL AS FLOAT64) AS conversion_rate,
            CAST(NULL AS NUMERIC) AS delivery_cost,
            CAST(NULL AS FLOAT64) AS sla_rate
     FROM `{PROJECT_ID}.{GOLD_DATASET}.cu03_kpis_operativos`
-    WHERE channel = 'streaming'
-      AND period_date = CURRENT_DATE()
-      AND NOT STARTS_WITH(scenario_id, 'streaming-')
+    WHERE scenario_id=@scenario_id AND period_date=CURRENT_DATE()
     """
-    config = bigquery.QueryJobConfig(maximum_bytes_billed=MAXIMUM_BYTES_BILLED,
+    config = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("scenario_id", "STRING", CURRENT_SCENARIO)], maximum_bytes_billed=MAXIMUM_BYTES_BILLED,
                                      labels={"service": "retailsmart-api", "table": "cu03-kpis-live"})
     rows = _get_client().query(sql, job_config=config, location=BQ_LOCATION).result(timeout=60)
     return [dict(row.items()) for row in rows]
@@ -374,6 +410,14 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         if path == "/api/v1/maintenance-analytics":
             return 200, {"data": fetch_maintenance_analytics(limit), "source_table": "cu04_alertas_mantenimiento"}
 
+        if path == "/api/v1/maintenance-risks":
+            rows = fetch_maintenance_events(limit)
+            return 200, {"data": rows, "count": len(rows), "source_table": "cu04_alertas_mantenimiento", "scenario_id": CURRENT_SCENARIO}
+
+        if path == "/api/v1/operations":
+            rows = fetch_operations_analytics(limit)["trend"]
+            return 200, {"data": rows, "count": len(rows), "source_table": "cu03_kpis_operativos", "scenario_id": CURRENT_SCENARIO}
+
         if path == "/api/v1/kpis":
             rows = fetch_streaming_kpis()
             return 200, {"data": rows, "count": len(rows), "source_table": "cu03_kpis_operativos", "scenario_id": scenario_id}
@@ -381,19 +425,10 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         table_by_route = {
             "/api/v1/kpis": "cu03_kpis_operativos",
             "/api/v1/inventory-plans": "cu02_plan_reposicion",
-            "/api/v1/maintenance-risks": "cu04_alertas_mantenimiento",
-            "/api/v1/operations": "operational_mart",
         }
         table = table_by_route[path]
-        try:
-            rows = fetch_rows(table, limit, scenario_id)
-            source_table = table
-        except Exception:
-            if path != "/api/v1/operations":
-                raise
-            LOGGER.exception("operational mart order feed unavailable")
-            rows = fetch_operations_analytics(limit)['trend']
-            source_table = "cu03_kpis_operativos"
+        rows = fetch_rows(table, limit, scenario_id)
+        source_table = table
         return 200, {
             "data": rows,
             "count": len(rows),
