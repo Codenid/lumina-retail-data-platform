@@ -224,6 +224,23 @@ def fetch_operations_analytics(limit: int) -> dict:
     metrics = run(metrics_sql, 'operations-metrics')[0]
     return {'metrics': metrics, 'trend': run(trend_sql, 'operations-trend')}
 
+def fetch_maintenance_analytics(limit: int) -> dict:
+    base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu04_alertas_mantenimiento`"
+    metrics_sql = f"""SELECT COUNT(DISTINCT asset_id) AS monitored_assets,
+      COUNTIF(UPPER(severity)='HIGH') AS high_alerts,
+      COUNTIF(UPPER(severity)='MEDIUM') AS medium_alerts,
+      COUNTIF(UPPER(severity)='NORMAL') AS normal_alerts,
+      COUNT(*) AS total_alerts, ROUND(AVG(metric_value),2) AS avg_metric_value
+      FROM {base}"""
+    trend_sql = f"""SELECT CAST(DATE(occurred_at) AS STRING) AS period_date,
+      COUNT(*) AS alerts, COUNTIF(UPPER(severity)='HIGH') AS high_alerts,
+      COUNTIF(UPPER(severity)='MEDIUM') AS medium_alerts
+      FROM {base} GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
+    def run(sql, label):
+        cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
+        return [dict(row.items()) for row in _get_client().query(sql, job_config=cfg, location=BQ_LOCATION).result(timeout=60)]
+    return {'metrics': run(metrics_sql, 'maintenance-metrics')[0], 'trend': run(trend_sql, 'maintenance-trend')}
+
 
 def fetch_streaming_kpis() -> list[dict]:
     """Consolida las filas incrementales del Gold Insights Writer.
@@ -289,6 +306,7 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
         "/api/v1/stock-risk",
         "/api/v1/forecast",
         "/api/v1/operations-analytics",
+        "/api/v1/maintenance-analytics",
         "/api/v1/catalog/stores",
         "/api/v1/catalog/products",
         "/api/v1/catalog/categories",
@@ -353,6 +371,8 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
             return 200, {"data": fetch_forecast_replenishment(limit), "source_table": "cu02_plan_reposicion + Gold dimensions"}
         if path == "/api/v1/operations-analytics":
             return 200, {"data": fetch_operations_analytics(limit), "source_table": "cu03_kpis_operativos"}
+        if path == "/api/v1/maintenance-analytics":
+            return 200, {"data": fetch_maintenance_analytics(limit), "source_table": "cu04_alertas_mantenimiento"}
 
         if path == "/api/v1/kpis":
             rows = fetch_streaming_kpis()
