@@ -50,7 +50,7 @@ TABLES = {
     ),
     "cu04_alertas_mantenimiento": (
         "scenario_id,asset_id,sensor_id,warehouse_id,anomaly_type,severity,metric_value,occurred_at",
-        "occurred_at DESC",
+        "CASE UPPER(severity) WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END, occurred_at DESC",
         True,
     ),
     "operational_mart": (
