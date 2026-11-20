@@ -2,14 +2,14 @@
 
 ## Objetivo
 
-Construir una aplicación web externa, orientada a una demostración ejecutiva y
+Construir una aplicación web externa, orientada a una ejecución ejecutiva y
 operativa, que consuma los resultados publicados por la plataforma RetailSmart.
 La aplicación no procesa ni transforma datos de negocio: consulta el API de
 consumo y presenta los cuatro casos de uso Gold con su fecha de actualización,
 escenario y fuente.
 
 La aplicación debe verse como una herramienta de operación real. Los datos son
-simulados para la demostración, pero se presentan como observaciones de negocio:
+controlados para la ejecución, pero se presentan como observaciones de negocio:
 ventas, inventario, entregas, competencia, eventos locales, redes sociales y
 telemetría.
 
@@ -33,7 +33,7 @@ Aplicación web externa
 La aplicación no debe conectarse directamente a BigQuery. El API es el límite de
 seguridad y de contrato. En producción se recomienda mantener el API privado y
 publicar la aplicación mediante un backend-for-frontend o una integración
-segura; para la presentación se puede usar un endpoint de demo con credenciales
+segura; para la presentación se puede usar un endpoint de operación con credenciales
 de solo lectura y un `scenario_id` explícito.
 
 ## Pantallas
@@ -187,7 +187,7 @@ conectado.
 - Conectar el `scenario_id` generado por los scripts de carga.
 - Validar que los cuatro módulos muestran filas reales del API.
 - Añadir modo presentación con datos de respaldo claramente rotulado.
-- Preparar una ruta de demostración: resumen → quiebre → reposición → KPIs →
+- Preparar una ruta de ejecución: resumen → quiebre → reposición → KPIs →
   mantenimiento.
 
 ### Fase 4 — Calidad y despliegue
@@ -208,16 +208,16 @@ conectado.
 - La aplicación nunca consulta BigQuery directamente.
 - Cuando el API falla, la interfaz explica el problema y ofrece reintento.
 - El modo de respaldo no se presenta como dato conectado.
-- La demo funciona en laptop y en una pantalla de presentación.
+- La operación funciona en laptop y en una pantalla de presentación.
 
-## Secuencia de demostración
+## Secuencia de ejecución
 
 1. Abrir Resumen y mostrar que todos los indicadores provienen del mismo
    escenario.
 2. Entrar a Riesgo de stock y señalar el descenso de `SKU-001` en `STORE-001`.
 3. Abrir Reposición y mostrar la cantidad y prioridad recomendadas.
 4. Abrir KPIs para conectar inventario con pedidos y entregas.
-5. Abrir Mantenimiento para demostrar que el mismo modelo sirve para activos y
+5. Abrir Mantenimiento para mostrar que el mismo modelo sirve para activos y
    sensores.
 6. Cerrar mostrando que la aplicación es un consumidor desacoplado: el valor
    aparece después de que la arquitectura procesa y publica los datos.

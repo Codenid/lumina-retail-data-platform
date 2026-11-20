@@ -43,10 +43,10 @@ recorrido `00–83` estén presentes sin ejecutar operaciones en GCP.
 ## Reejecución
 
 Usa un `PREFIX` exclusivo por instalación y cambia `DEMO_RUN_ID` para una nueva
-demostración. Los recursos compartidos se verifican antes de crear; los datos
+ejecución. Los recursos compartidos se verifican antes de crear; los datos
 de prueba y marcadores se aíslan por `DEMO_RUN_ID`.
 
-## Carga rápida para la demostración
+## Carga rápida para la operación
 
 Después del preflight batch (`54`), preparar la carga inicial con:
 

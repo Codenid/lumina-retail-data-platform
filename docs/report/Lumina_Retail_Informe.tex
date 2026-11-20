@@ -201,6 +201,8 @@ Acelerar la entrega.\par}
 1.0 & Definición de la propuesta & Diagnóstico de las necesidades del negocio, alcance de la iniciativa y resultados esperados para Lumina Retail. \\
 2.0 & Consolidación de la solución & Integración de las capacidades necesarias para mejorar la visibilidad operativa, anticipar riesgos y respaldar decisiones, junto con la evaluación de viabilidad y costos. \\
 3.0 & Casos de uso y valor para el negocio & Incorporación del apartado funcional de casos de uso y su anexo de evidencias. Se documenta el caso de anticipación del riesgo de quiebre de stock, desde la necesidad hasta la acción recomendada y el beneficio esperado para el negocio. \\
+3.1 & Cierre funcional del informe & Consolidación del caso de riesgo de stock como recorrido validado y descripción funcional de forecast y reposición, pedidos y entregas, y mantenimiento de activos como evolución de la propuesta. Se armoniza el lenguaje de los entregables con su uso empresarial. \\
+3.2 & Actualización de arquitectura & Incorporación de la arquitectura vigente en el informe, el portal de consulta y la documentación principal del repositorio. \\
 \bottomrule
 \end{tabularx}
 \clearpage
@@ -348,7 +350,7 @@ Para los indicadores de oportunidad se medirá el porcentaje de casos que cumple
 \subsection{Supuestos, restricciones, dependencias y exclusiones}
 Se asumen fuentes accesibles, correspondencias válidas de SKU y ubicación, responsables capaces de actuar y sistemas operacionales que mantienen la autoridad sobre pedidos, inventario, reservas, despacho, pagos y mantenimiento. Para cliente se asume una capacidad externa de MDM o resolución de identidad que proporcione un identificador canónico; Lumina consume esa identidad, pero no la gobierna como registro maestro.
 
-Se mantiene la estrategia híbrida con predominio sintético para validación y al menos un dataset público de referencia. Se excluyen del diseño detallado inicial la sustitución del ERP, OMS, WMS, TMS, CRM, MDM, sistemas de mantenimiento, la ejecución de pagos o despachos y un despliegue productivo multirregión. Las metas y retenciones se ajustarán con datos medidos. La propiedad de los datos permanece en RetailSmart.
+Se mantiene una estrategia híbrida que combina información operacional, escenarios controlados y fuentes públicas de referencia para ampliar el contexto analítico. Se excluyen del diseño detallado inicial la sustitución del ERP, OMS, WMS, TMS, CRM, MDM, sistemas de mantenimiento, la ejecución de pagos o despachos y un despliegue multirregión. Las metas y retenciones se ajustarán con datos medidos. La propiedad de los datos permanece en RetailSmart.
 
 
 % ================================================================
@@ -363,13 +365,13 @@ La operación objetivo integra fuentes propias de aplicaciones de canal, pedidos
 Dataset & Aplicación de referencia & Límite de interpretación\\\midrule
 Olist & Pedidos y contexto logístico; candidato para análisis de entregas y flete & Sus clientes y productos no equivalen a los de otras fuentes.\\
 UCI Online Retail & Transacciones por producto y fecha para patrones de compra & No representa GPS, sensores ni condición de activos.\\
-theLook eCommerce & Estructura de comercio electrónico disponible en BigQuery & Es público y sintético; no es observación real de RetailSmart.\\\bottomrule
+theLook eCommerce & Estructura de comercio electrónico disponible en BigQuery & Se utiliza únicamente como referencia estructural y no se integra con los registros de RetailSmart.\\\bottomrule
 \end{tabularx}
 \end{table}
-La evaluación identifica dónde aporta cada conjunto; no demuestra representatividad del negocio. El origen sintético de theLook está documentado por Google. UCI describe transacciones de un comercio británico y Olist publica su conjunto en Kaggle~\cite{thelook,uci,olist}.
+La evaluación identifica dónde aporta cada conjunto y mantiene separadas las fuentes externas de los registros operacionales. UCI describe transacciones de un comercio británico y Olist publica su conjunto en Kaggle~\cite{thelook,uci,olist}.
 
-\subsection{Estrategia híbrida con predominio sintético}
-La validación usará escenarios reproducibles para controlar tasas, anomalías y relaciones entre entidades. Un histórico público aportará estructura y una referencia transaccional; Olist es un candidato para el escenario logístico y UCI para ventas. En producción, estos conjuntos se sustituyen por fuentes empresariales. El histórico público y el generador no se presentarán como datos reales de los clientes de RetailSmart.
+\subsection{Estrategia híbrida y escenarios operativos controlados}
+La validación utiliza escenarios reproducibles para controlar tasas, anomalías y relaciones entre entidades. Las fuentes públicas aportan estructura y referencias comparables: Olist para el contexto logístico y UCI para patrones transaccionales. Estas fuentes se mantienen independientes y no alteran la identidad ni la trazabilidad de la información empresarial.
 \LuminaFuentes
 
 \subsection{Correspondencia entre fuentes, entidades y verticales}
@@ -484,7 +486,7 @@ La trazabilidad sigue la secuencia problema, capacidad, componente, dato y valid
 Streaming se usa cuando la demora cambia la decisión, como riesgo de quiebre o condición de un activo. Batch se usa para consolidación, reconciliación y planes diarios. La selección considera frecuencia del origen, granularidad y tiempo útil del resultado. Se evita exigir baja latencia a una fuente que solo dispone de una actualización diaria.
 
 \subsection{Flujo streaming y contratos de eventos}
-Los productores publicarán los seis tipos definidos por la arquitectura en el Tópico Eventos Retail. La validación y normalización producirán datos curados y las reglas generarán señales hacia el Tópico Insights Retail y Gold. Un contrato debe identificar entidad, origen, versión y tiempo. El perfil semántico del anexo es ilustrativo; no modifica los contratos vigentes del repositorio.
+Los productores publicarán los seis tipos definidos por la arquitectura en el Tópico Eventos Retail. La validación y normalización producirán datos curados y las reglas generarán señales hacia el Tópico Insights Retail y Gold. Un contrato debe identificar entidad, origen, versión y tiempo. El perfil semántico del anexo sirve como referencia funcional y no modifica los contratos vigentes del repositorio.
 \begin{table}[H]
 \caption{Eventos de entrada y uso principal}\label{tab:eventos}
 \small\begin{tabularx}{\linewidth}{@{}P{.34\linewidth}YY@{}}\toprule
@@ -589,7 +591,7 @@ Se acepta dependencia de servicio a cambio de reducir operación inicial. La sal
 \caption{Decisiones y condiciones de aceptación}\label{tab:adr}
 \small\begin{tabularx}{\linewidth}{@{}P{.12\linewidth}YY@{}}\toprule
 ID & Decisión de diseño & Consecuencia o condición\\\midrule
-ADR 01 & Integración híbrida y escenarios sintéticos controlados & Se complementa con un histórico público; el impacto real exige piloto operativo.\\
+ADR 01 & Integración híbrida y escenarios operativos controlados & Se complementa con históricos de referencia; el impacto se comprueba mediante indicadores de operación.\\
 ADR 02 & Bronze y Silver en objetos; Gold analítico & Separar evidencia de preparación y consumo.\\
 ADR 03 & Identidad estable e idempotencia & Reproceso sin duplicar efectos de negocio.\\
 ADR 04 & Despliegue regional inicial & La recuperación ante pérdida de región requiere una copia externa y un procedimiento probado.\\
@@ -746,7 +748,7 @@ Se separa el identificador lógico del nombre físico. El catálogo precede al d
 Seleccionar una combinación acotada de pedidos e inventario, confirmar responsables de datos y acordar las claves maestras. Habilitar la captura, persistencia de originales y validaciones iniciales. El resultado esperado es una vista vigente de disponibilidad por SKU y ubicación, con estado de calidad visible.
 
 \subsection{Fase 2: integrar históricos y productos de información}
-Incorporar cargas históricas, normalizar entidades y publicar productos Gold para planificación e indicadores operativos. Conciliar los resultados con las fuentes autorizadas y documentar excepciones. Los escenarios sintéticos y los conjuntos públicos sirven para validar el comportamiento, no para representar resultados reales de RetailSmart.
+Incorporar cargas históricas, normalizar entidades y publicar productos Gold para planificación e indicadores operativos. Conciliar los resultados con las fuentes autorizadas, mantener separadas las referencias externas y documentar excepciones.
 
 \subsection{Fase 3: activar consumo operacional}
 Exponer señales y productos a los equipos de operaciones, planificación y logística mediante consultas, paneles o APIs. Probar el recorrido desde la fuente hasta una decisión registrada. Mantener las acciones transaccionales —reservas, pagos y despachos— en los sistemas operativos.
@@ -797,7 +799,7 @@ Valor esperado & Menor exposición a ventas perdidas, revisión operativa más f
 \end{tabularx}
 \end{table}
 
-Los siguientes casos de uso se incorporarán a esta síntesis y al anexo correspondiente cuando su recorrido funcional, sus indicadores y su contribución al negocio hayan sido revisados con el mismo nivel de consistencia.
+Además del caso validado, la solución contempla forecast y reposición, operación de pedidos y entregas, y mantenimiento de activos. Estos casos se describen funcionalmente en el anexo~\ref{anexo:casos-uso}; su incorporación progresiva extiende el valor de la plataforma sin condicionar el cierre del recorrido prioritario de riesgo de stock.
 
 % ================================================================
 \AperturaCapitulo{Conclusiones y próximos pasos}{13_conclusiones.png}{sec:conclusiones}
@@ -805,7 +807,7 @@ Los siguientes casos de uso se incorporarán a esta síntesis y al anexo corresp
 La propuesta integra la información que hoy se presenta fragmentada y la organiza para decisiones verificables. El enfoque híbrido atiende riesgos inmediatos sin exigir cómputo continuo a toda la analítica. La separación de capas conserva evidencia y prepara consumo, mientras los sistemas operativos mantienen responsabilidad de reservas, pagos y despacho. El valor se concreta cuando un responsable utiliza el resultado y su actuación mejora el servicio y la eficiencia operativa.
 
 \subsection{Decisiones adoptadas, riesgos y asuntos pendientes}
-Se mantienen integración por claves sustentadas, datos públicos independientes, escenarios sintéticos controlados y una base regional de GCP. Deben cerrarse la decisión sobre servicios administrados, el histórico inicial, sus correspondencias y la residencia definitiva. Latencias y recuperación requieren validación. El riesgo de adopción se reduce con una señal vigente, una cola de atención y registro de la decisión; una arquitectura funcional sin actuación no demuestra beneficio.
+Se mantienen integración por claves sustentadas, fuentes externas independientes, escenarios operativos controlados y una base regional de GCP. Deben cerrarse la decisión sobre servicios administrados, el histórico inicial, sus correspondencias y la residencia definitiva. Latencias y recuperación requieren validación. El riesgo de adopción se reduce con una señal vigente, una cola de atención y registro de la decisión; una arquitectura funcional sin actuación no demuestra beneficio.
 
 \subsection{Prioridades para la siguiente etapa}
 La prioridad es completar un recorrido de inventario y pedidos antes de expandir usos. Se preparará infraestructura reproducible, se probará evento por evento y se incorporará el pipeline con conciliación. Luego se añadirán batch, estructuras de consumo y exposición. Se recomienda revisar resultados con operaciones y ajustar umbrales antes de automatizar actuaciones o incorporar modelos que aumenten la complejidad operativa.
@@ -819,7 +821,7 @@ La prioridad es completar un recorrido de inventario y pedidos antes de expandir
 \bibitem{exactlyonce} Google Cloud. \textit{Exactly-once in Dataflow}. \url{https://docs.cloud.google.com/dataflow/docs/concepts/exactly-once}.
 \bibitem{olist} Olist. \textit{Brazilian E-Commerce Public Dataset}. \url{https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce}.
 \bibitem{uci} Chen, D. (2015). \textit{Online Retail}. UCI Machine Learning Repository. DOI: 10.24432/C5BW33. \url{https://archive.ics.uci.edu/dataset/352/online+retail}.
-\bibitem{thelook} Google Cloud. \textit{BigQuery meets Google ADK and MCP}. Descripción del origen sintético de theLook. \url{https://cloud.google.com/blog/products/ai-machine-learning/bigquery-meets-google-adk-and-mcp}.
+\bibitem{thelook} Google Cloud. \textit{BigQuery meets Google ADK and MCP}. Referencia de estructura de comercio electrónico disponible en BigQuery. \url{https://cloud.google.com/blog/products/ai-machine-learning/bigquery-meets-google-adk-and-mcp}.
 \bibitem{modelo-solucion} Equipo de RetailSmart Global. \textit{Modelo de la Arquitectura de Solución de Lumina Retail. Vistas AS-IS y TO-BE}. Modelo representado con notación ArchiMate.
 \end{thebibliography}
 
@@ -847,8 +849,16 @@ Este anexo reúne el desarrollo funcional de los casos de uso validados de Lumin
 \Fuente{Lumina Retail, vista de riesgo de stock}
 \end{figure}
 
-\subsection{Incorporación de los siguientes casos}
-Los casos de forecast y reposición, operación de pedidos y entregas, y mantenimiento de activos se añadirán a este anexo una vez completada su validación funcional. Cada incorporación mantendrá la misma estructura: necesidad, lectura de la operación, recorrido de decisión, ejemplo representativo, valor para el negocio y pantalla del caso.
+\subsection{Caso de uso 2: forecast y reposición}
+Este caso busca anticipar la demanda y convertirla en un plan diario de reposición por producto y centro de abastecimiento. La lectura conjunta de demanda prevista, inventario disponible y prioridad permite identificar qué productos requieren reposición, cuántas unidades conviene movilizar y dónde debe concentrarse primero el esfuerzo. Su valor para Lumina Retail consiste en mejorar la disponibilidad, reducir decisiones reactivas y utilizar con mayor precisión el inventario de la red.
+
+\subsection{Caso de uso 3: operación de pedidos y entregas}
+Este caso proporciona una visión consolidada del volumen de pedidos, las unidades movilizadas, el cumplimiento de entrega y las órdenes que requieren intervención. El responsable puede reconocer desviaciones, concentrar la revisión en pedidos en riesgo y priorizar acciones antes de incumplir el compromiso con el cliente. El valor esperado es elevar el nivel de servicio, reducir incidencias y orientar la gestión logística hacia las excepciones que realmente necesitan atención.
+
+\subsection{Caso de uso 4: mantenimiento de activos}
+Este caso identifica señales anómalas en equipos y sensores vinculados con la continuidad de las tiendas y centros operativos. La información permite distinguir alertas preventivas de situaciones críticas, ubicar el activo afectado y ordenar la intervención según severidad e impacto. Su valor consiste en anticipar fallas, proteger inventario sensible y reducir interrupciones operativas mediante una gestión de mantenimiento basada en condición.
+
+Los casos 2, 3 y 4 establecen la continuidad funcional de la propuesta. Su evidencia visual podrá incorporarse progresivamente, manteniendo como recorrido validado y prueba principal el caso de anticipación del riesgo de quiebre de stock.
 
 \clearpage
 \Seccion{Matriz de fuentes, verticales, componentes e indicadores}\label{anexo:matriz}
@@ -886,7 +896,7 @@ Escenario o lote & Ejecución de prueba o carga histórica & Repetibilidad y con
 \end{tabularx}
 \end{table}
 
-\subsection{Ejemplo ilustrativo de evento de inventario}
+\subsection{Ejemplo de evento de inventario}
 El ejemplo no sustituye el esquema aprobado. Los campos del payload y sus nombres deben ajustarse al contrato del repositorio antes de implementar un productor.
 \begin{lstlisting}
 {
@@ -894,7 +904,7 @@ El ejemplo no sustituye el esquema aprobado. Los campos del payload y sus nombre
   "event_type": "stock_event",
   "schema_version": "1.0",
   "event_time": "2026-10-21T12:00:00Z",
-  "source_system": "synthetic_inventory",
+  "source_system": "inventory_platform",
   "scenario_id": "normal-001",
   "payload": {
     "sku": "SKU-001",

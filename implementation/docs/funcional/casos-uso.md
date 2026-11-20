@@ -1,8 +1,8 @@
-# Casos de uso y contrato de demostración
+# Casos de uso y contrato funcional
 
-La demo mantiene un universo sintético coherente y reutiliza las mismas claves
-entre streaming y batch. Cada ejecución debe producir datos válidos primero y
-defectos configurables después.
+La operación mantiene un universo de negocio coherente y reutiliza las mismas
+claves entre streaming y batch. Cada ejecución conserva la trazabilidad de los
+datos válidos y de las anomalías identificadas.
 
 | Caso | Pregunta | Gold observable |
 |---|---|---|

@@ -1,6 +1,6 @@
 # Operación
 
-Guías para desplegar, validar y cerrar recursos de la demostración.
+Guías para desplegar, validar y operar los recursos de Lumina Retail.
 
 - `ejecucion-scripts.md`: orden de instalación, dependencias y cierres de recursos temporales.
 - `runbooks/`: guías breves de validación manual, una por grupo funcional.

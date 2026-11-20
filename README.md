@@ -21,7 +21,7 @@ mantienen la autoridad sobre reservas, pagos y despachos.
 
 ## Arquitectura
 
-Consulta el [diagrama general de arquitectura](docs/report-resources/figures/arquitectura/09_arquitectura_red_overview.pdf) y el [modelo vigente](docs/architecture/README.md).
+Consulta la [arquitectura vigente de Lumina Retail](docs/architecture/generated/arquitectura-archimate.pdf) y su [documentación de arquitectura](docs/architecture/README.md).
 
 ## Implementación
 

@@ -7,7 +7,7 @@
 
 1. Abrir el servicio indicado en la consola del proyecto configurado.
 2. Filtrar recursos por `PREFIX` y revisar la región configurada.
-3. Confirmar: Sink, Audit Store, métrica, alerta y SLO existen; evento sintético llega al store.
+3. Confirmar: Sink, Audit Store, métrica, alerta y SLO existen; el evento de control llega al store.
 
 ## Validación por CLI — solo lectura
 

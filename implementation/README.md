@@ -22,4 +22,4 @@ bash automatizacion/scripts/00_verificar_acceso.sh
 
 ## Reglas
 
-Los scripts son idempotentes y detienen la ejecución ante permisos o divergencias. `config.env`, `state/` y `.venv/` son locales y no deben versionarse. Dataflow y Dataproc pueden generar costos mientras están activos; revisa el estado antes y después de cada demostración.
+Los scripts son idempotentes y detienen la ejecución ante permisos o divergencias. `config.env`, `state/` y `.venv/` son locales y no deben versionarse. Dataflow y Dataproc pueden generar costos mientras están activos; revisa su estado antes y después de cada ejecución.

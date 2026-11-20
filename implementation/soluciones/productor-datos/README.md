@@ -49,7 +49,7 @@ gcloud run services proxy "${PREFIX}-productor-datos" --region="$REGION" --port=
 ```
 
 Cloud Run se configura con una instancia y CPU disponible durante la
-simulación, porque el controlador de carga vive en el proceso. El servicio
+ejecución controlada, porque el controlador de carga vive en el proceso. El servicio
 genera costo mientras permanezca desplegado; el volumen estimado no es un
 estimador monetario.
 

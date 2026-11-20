@@ -1,8 +1,8 @@
 # Lumina Retail · Aplicación de consumo
 
-Prototipo web end-to-end de la aplicación externa de consumo. Es una aplicación
-estática sin dependencias, con datos sintéticos coherentes para presentar las
-ocho vistas del wireframe.
+Aplicación web end-to-end para el consumo de información operacional. La
+interfaz consulta los servicios publicados y presenta las vistas funcionales
+de Lumina Retail.
 
 ## Vistas
 
@@ -25,10 +25,9 @@ python3 -m http.server 8080 --directory web/lumina-consumo
 
 Abrir `http://localhost:8080`.
 
-## Próximo cambio de integración
+## Integración
 
-La primera versión usa datos sintéticos en `app.js`. Para conectar el API real,
-se debe reemplazar el modelo local por funciones `fetch` hacia:
+La aplicación consume información mediante funciones `fetch` sobre las rutas:
 
 ```text
 /api/v1/insights
