@@ -50,7 +50,7 @@ TABLES = {
     ),
     "cu04_alertas_mantenimiento": (
         "scenario_id,asset_id,sensor_id,warehouse_id,anomaly_type,severity,metric_value,occurred_at",
-        "CASE UPPER(severity) WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END, occurred_at DESC",
+        "occurred_at DESC, FARM_FINGERPRINT(asset_id)",
         True,
     ),
     "operational_mart": (
@@ -227,14 +227,14 @@ def fetch_operations_analytics(limit: int) -> dict:
 def fetch_maintenance_analytics(limit: int) -> dict:
     base = f"`{PROJECT_ID}.{GOLD_DATASET}.cu04_alertas_mantenimiento`"
     metrics_sql = f"""SELECT COUNT(DISTINCT asset_id) AS monitored_assets,
-      COUNTIF(UPPER(severity)='HIGH') AS high_alerts,
-      COUNTIF(UPPER(severity)='MEDIUM') AS medium_alerts,
-      COUNTIF(UPPER(severity)='NORMAL') AS normal_alerts,
-      COUNT(*) AS total_alerts, ROUND(AVG(metric_value),2) AS avg_metric_value
+      COUNT(DISTINCT IF(UPPER(severity)='HIGH', asset_id, NULL)) AS high_alerts,
+      COUNT(DISTINCT IF(UPPER(severity)='MEDIUM', asset_id, NULL)) AS medium_alerts,
+      COUNT(DISTINCT IF(UPPER(severity) NOT IN ('HIGH','MEDIUM'), asset_id, NULL)) AS normal_alerts,
+      COUNT(DISTINCT asset_id) AS total_alerts, ROUND(AVG(metric_value),2) AS avg_metric_value
       FROM {base}"""
     trend_sql = f"""SELECT CAST(DATE(occurred_at) AS STRING) AS period_date,
-      COUNT(*) AS alerts, COUNTIF(UPPER(severity)='HIGH') AS high_alerts,
-      COUNTIF(UPPER(severity)='MEDIUM') AS medium_alerts
+      COUNT(DISTINCT asset_id) AS alerts, COUNT(DISTINCT IF(UPPER(severity)='HIGH', asset_id, NULL)) AS high_alerts,
+      COUNT(DISTINCT IF(UPPER(severity)='MEDIUM', asset_id, NULL)) AS medium_alerts
       FROM {base} GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
     def run(sql, label):
         cfg = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter('limit','INT64',limit)] if '@limit' in sql else [], maximum_bytes_billed=MAXIMUM_BYTES_BILLED, labels={'service':'retailsmart-api','table':label})
