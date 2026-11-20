@@ -372,7 +372,7 @@ def dispatch(path: str, query_string: str) -> tuple[int, dict]:
             if path != "/api/v1/operations":
                 raise
             LOGGER.exception("operational mart order feed unavailable")
-            rows = fetch_streaming_kpis()
+            rows = fetch_operations_analytics(limit)['trend']
             source_table = "cu03_kpis_operativos"
         return 200, {
             "data": rows,
