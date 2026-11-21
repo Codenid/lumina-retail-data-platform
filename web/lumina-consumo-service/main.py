@@ -84,12 +84,21 @@ def chat():
         return jsonify({"error": "Vertex AI no está configurado."}), 503
     try:
         token = upstream_token()
+        lower_question = question.lower()
+        if any(word in lower_question for word in ("pedido", "entrega", "despacho", "entregado", "tarde", "servicio")):
+            endpoints = ("summary", "operations")
+        elif any(word in lower_question for word in ("reponer", "reposición", "stock", "quiebre", "producto", "sku", "inventario")):
+            endpoints = ("summary", "stock-risk", "forecast")
+        elif any(word in lower_question for word in ("activo", "mantenimiento", "sensor", "máquina")):
+            endpoints = ("summary", "maintenance-risks")
+        else:
+            endpoints = ("summary", "stock-risk", "forecast", "operations", "maintenance-risks")
         context = []
-        for endpoint in ("summary", "stock-risk", "forecast", "operations", "maintenance-risks"):
+        for endpoint in endpoints:
             try:
                 result = requests.get(f"{UPSTREAM}/api/v1/{endpoint}", params={"limit": 100}, headers={"Authorization": f"Bearer {token}"}, timeout=8)
                 if result.ok:
-                    context.append(f"{endpoint}: {result.text[:12000]}")
+                    context.append(f"{endpoint}: {result.text[:5000]}")
             except requests.RequestException:
                 app.logger.warning("Fuente %s no disponible para el asistente", endpoint)
         context_text = "\n".join(context)
@@ -102,6 +111,7 @@ def chat():
         url = f"https://{vertex_host}/v1/projects/{project}/locations/{location}/publishers/google/models/{model}:generateContent"
         response = requests.post(url, headers={"Authorization": f"Bearer {credentials.token}"}, json={"contents": [{"role": "user", "parts": [{"text": prompt}]}]}, timeout=60)
         if not response.ok:
+            app.logger.error("Vertex respondió %s: %s", response.status_code, response.text[:500])
             return jsonify({"error": "Vertex AI no pudo responder."}), 502
         payload = response.json()
         answer = payload["candidates"][0]["content"]["parts"][0]["text"]
