@@ -232,7 +232,7 @@ RetailSmart Global opera con tiendas físicas y canales de e-commerce sobre una 
 Estas brechas se manifiestan en mayores costos de última milla, retrasos durante campañas de alta demanda, quiebres de inventario, decisiones aisladas entre unidades y mantenimiento reactivo. La plataforma no pretende corregir fallas transaccionales del ERP, OMS, WMS, TMS, CRM o sistemas de mantenimiento, sino reducir la demora entre la generación de datos y la toma de decisiones.
 
 \subsection{Solución propuesta y alcance inicial}
-Proponemos la Plataforma de Datos RetailSmart como soporte de Lumina Retail, entendida como una capa analítica que integra información de ventas, pedidos, inventario, logística, clientes, interacción digital y telemetría. Lumina conserva histórico, combina señales recientes y genera alertas, análisis, predicciones y recomendaciones para apoyar a los responsables operacionales. Las predicciones corresponden a modelos analíticos por lotes; no se incorpora un agente autónomo o conversacional. Agent Platform se reserva para una eventual capacidad basada en agentes y no se presenta como un servicio desplegado en esta solución.
+Proponemos la Plataforma de Datos RetailSmart como soporte de Lumina Retail, entendida como una capa analítica que integra información de ventas, pedidos, inventario, logística, clientes, interacción digital y telemetría. Lumina conserva histórico, combina señales recientes y genera alertas, análisis, predicciones y recomendaciones para apoyar a los responsables operacionales. La web de consumo incorpora autenticación, resumen ejecutivo, cuatro vistas operativas y Lumina Assistant, una interfaz conversacional que consulta los productos Gold mediante la API y utiliza Vertex AI para interpretar preguntas en lenguaje natural. El asistente no ejecuta acciones transaccionales ni reemplaza los controles de negocio.
 
 El principio rector es: \textbf{Lumina observa, integra, analiza, anticipa y recomienda; el ecosistema operacional decide y ejecuta}. Por tanto, la solución no sustituye la reserva transaccional de stock, el procesamiento del pedido, el picking, el despacho, el pago, la identidad maestra del cliente ni el mantenimiento físico de activos.
 
@@ -783,7 +783,7 @@ Pico y caída de procesamiento & Tiempo de respuesta, backlog y recuperación & 
 \subsection{Casos de uso validados y valor para el negocio}
 Los casos de uso de Lumina Retail se presentan a partir de la decisión que permiten tomar y del valor que aportan a la operación. En esta sección se mantiene una síntesis ejecutiva; el recorrido funcional, el ejemplo representativo y la evidencia visual se desarrollan en el anexo~\ref{anexo:casos-uso}. Solo se incorporan al informe los casos cuya historia, indicadores y decisión de negocio han sido revisados de manera integral.
 
-El primer caso validado aborda la anticipación del riesgo de quiebre de stock. Sobre 3.200 productos monitoreados en 32 tiendas, la solución concentra la atención en 96 productos con riesgo y prioriza 31 casos críticos. Esto permite pasar de una revisión general del catálogo a una cola concreta de decisiones, ordenada por tienda, disponibilidad y urgencia de reposición.
+Los cuatro casos de uso cuentan con productos Gold, rutas de consumo y vistas operativas en la web. El primer caso aborda la anticipación del riesgo de quiebre de stock: sobre 3.200 productos monitoreados en 32 tiendas, la solución concentra la atención en 96 productos con riesgo y prioriza 31 casos críticos. Esto permite pasar de una revisión general del catálogo a una cola concreta de decisiones, ordenada por tienda, disponibilidad y urgencia de reposición. Los casos de forecast y reposición, operación de pedidos y entregas, y mantenimiento de activos completan el recorrido operativo y se encuentran documentados con sus evidencias en el anexo.
 
 \begin{table}[H]
 \caption{Síntesis funcional del caso de uso de riesgo de stock}\label{tab:caso-riesgo-stock}
@@ -799,7 +799,7 @@ Valor esperado & Menor exposición a ventas perdidas, revisión operativa más f
 \end{tabularx}
 \end{table}
 
-Además del caso validado, la solución contempla forecast y reposición, operación de pedidos y entregas, y mantenimiento de activos. Estos casos se describen funcionalmente en el anexo~\ref{anexo:casos-uso}; su incorporación progresiva extiende el valor de la plataforma sin condicionar el cierre del recorrido prioritario de riesgo de stock.
+El resumen ejecutivo funciona como punto de entrada para priorizar la red y Lumina Assistant permite consultar los cuatro casos en lenguaje natural. La API de consumo mantiene la separación entre analítica y ejecución: expone lecturas autenticadas de BigQuery Gold, mientras reservas, pagos, picking, despacho y mantenimiento físico permanecen bajo responsabilidad de los sistemas operacionales. El recorrido completo, la evidencia visual y el alcance del asistente se desarrollan en el anexo~\ref{anexo:casos-uso}.
 
 % ================================================================
 \AperturaCapitulo{Conclusiones y próximos pasos}{13_conclusiones.png}{sec:conclusiones}

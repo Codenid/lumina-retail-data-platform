@@ -364,6 +364,16 @@ Las vistas deben explicitar columnas, filtros, fuentes Gold y vigencia. El consu
 
 Cloud Run expone una API privada con autenticación IAM, mínimo cero instancias, máximo dos y límite documentado de 100 filas por solicitud. La integración con consumidores externos se gestiona mediante contratos independientes. Una respuesta de `/healthz` no demuestra la funcionalidad de las rutas de negocio.
 
+### Web de consumo y Lumina Assistant
+
+La web de consumo se publica como un servicio separado en Cloud Run (`web/lumina-consumo-service`). Su responsabilidad es presentar los productos Gold sin alterar la data ni ejecutar operaciones transaccionales. La pantalla inicial es el resumen ejecutivo y el menú expone los cuatro casos de uso: riesgo de stock, forecast y reposición, operación de pedidos y entregas, y mantenimiento de activos.
+
+El acceso se protege mediante el endpoint `POST /auth/login`; las credenciales productivas se gestionan por configuración del entorno y no se almacenan en el repositorio. Después de autenticarse, el navegador conserva la sesión de forma local y consume las rutas de negocio a través del proxy del servicio web. El servicio responde además `GET /healthz` para comprobar disponibilidad del proxy.
+
+Lumina Assistant se implementa en `POST /api/chat`. Para cada pregunta, el servicio consulta las rutas necesarias de la API de insights, construye un contexto limitado a los cuatro casos de uso y solicita a Vertex AI una respuesta en lenguaje natural. El modelo se selecciona mediante configuración (`VERTEX_MODEL`) y la identidad de ejecución usa credenciales de Google Cloud; no se incluyen claves en el código ni en el repositorio. El asistente es de consulta y priorización: no reserva stock, no crea pedidos, no modifica BigQuery y no reemplaza la autoridad transaccional de los sistemas operacionales.
+
+La interfaz conserva la conversación en el navegador, muestra preguntas sugeridas y presenta las respuestas con formato legible. Si Vertex AI no está disponible, la API devuelve un error controlado y la web mantiene la sesión del usuario. El contrato público y la lectura rápida de las rutas se mantienen en [`docs/api/index.html`](../../../../docs/api/index.html), junto con `openapi.yaml` y `swagger-ui.html`.
+
 | Método y ruta | Entrada HTTP | Fuente BigQuery | Salida JSON |
 |---|---|---|---|
 | `GET /api/v1/insights` | `limit`, `scenario_id` opcional | `insights_streaming`, CU01 | `streaming_insights[]`, `stockout_risks[]`, `counts`, `scenario_id` |
