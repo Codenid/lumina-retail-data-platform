@@ -828,37 +828,82 @@ La prioridad es completar un recorrido de inventario y pedidos antes de expandir
 % ================================================================
 \AperturaAnexos{14_anexos.png}
 \clearpage\appendix
-\Seccion{Casos de uso y valor para el negocio}\label{anexo:casos-uso}
-Este anexo reúne el desarrollo funcional de los casos de uso validados de Lumina Retail. Cada caso se explica desde la necesidad que atiende, la lectura que ofrece a los responsables de negocio, la decisión que habilita y el valor que aporta. La evidencia visual permite relacionar los indicadores con el recorrido disponible para el usuario.
+\Seccion{Casos de uso, resumen ejecutivo y Lumina Assistant}\label{anexo:casos-uso}
+Este anexo documenta las seis vistas que articulan la propuesta de valor de Lumina Retail: una entrada ejecutiva, cuatro casos de uso operativos y un asistente conversacional. Cada pantalla se presenta desde la necesidad empresarial que atiende, la decisión que habilita y el impacto esperado en la operación.
 
-\subsection{Caso de uso 1: anticipación del riesgo de quiebre de stock}
-\textbf{Necesidad del negocio.} Lumina Retail administra un catálogo de 3.200 productos distribuido en 32 tiendas. Revisar manualmente todo el catálogo dificulta reconocer a tiempo qué productos pueden agotarse, dónde se concentra la exposición y cuáles requieren atención inmediata. La necesidad consiste en reducir el universo de revisión y ordenar las decisiones de reposición antes de que la falta de inventario afecte la venta.
+\subsection{Pantalla de resumen ejecutivo: priorización de la red}
+\textbf{Propósito empresarial.} El resumen ejecutivo es el punto de entrada para comprender rápidamente el estado de la operación. Consolida clientes atendidos, tiendas, SKU monitoreados, pedidos procesados y unidades movilizadas, y permite que un responsable de negocio identifique dónde concentrar la atención sin recorrer primero cada módulo.
 
-\textbf{Lectura de la operación.} El caso de uso evalúa el catálogo completo y concentra la atención en 96 productos con riesgo de quiebre, equivalentes al 3\,\% del catálogo monitoreado. Dentro de este grupo, 31 productos presentan una condición crítica. La evolución diaria muestra una reducción de 101 a 96 productos en riesgo, cercana al 5\,\% frente al día anterior, lo que permite observar si la exposición está mejorando.
-
-\textbf{Recorrido de decisión.} El responsable comienza con la cobertura general del catálogo, identifica el número de productos en riesgo y separa los casos críticos. A continuación, revisa las tiendas con mayor concentración, abre el detalle de los productos afectados y consulta su disponibilidad, porcentaje de riesgo y acción recomendada. El recorrido termina con una prioridad clara para reposición y despacho.
-
-\textbf{Ejemplo representativo.} En la tienda de Miraflores se identifica un producto de la categoría Congelados con 9 unidades disponibles y un riesgo de quiebre del 99\,\%. La acción indicada es priorizar su reposición y despacho antes de que la disponibilidad afecte la venta. La misma vista permite reconocer otros productos críticos de la tienda y comparar su urgencia.
-
-\textbf{Valor para Lumina Retail.} El principal beneficio es convertir la revisión de 3.200 productos en una cola de 31 decisiones críticas. Los responsables de inventario pueden enfocar su atención en las tiendas y productos con mayor exposición, actuar con anticipación y utilizar mejor el esfuerzo de reposición. El seguimiento diario permite comprobar si las acciones adoptadas reducen el riesgo.
+\textbf{Decisión que habilita.} La vista conecta los indicadores generales con las alertas de inventario y las tiendas afectadas. Su valor consiste en alinear a operaciones, abastecimiento y logística alrededor de una misma lectura de la red: qué está funcionando, qué presenta riesgo y cuál debe ser la siguiente acción.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=.94\linewidth,height=.72\textheight,keepaspectratio]{Caso de uso 1 anticipación del riesgo de quiebre de stock.jpeg}
-\caption{Caso de uso 1: vista funcional para anticipar el riesgo de quiebre de stock.}\label{fig:caso-uso-riesgo-stock}
-\Fuente{Lumina Retail, vista de riesgo de stock}
+\includegraphics[width=.94\linewidth,height=.68\textheight,keepaspectratio]{resume-ejecutivo.jpeg}
+\caption{Resumen ejecutivo de la operación y priorización de alertas de la red.}\label{fig:ui-resumen-ejecutivo}
+\Fuente{Lumina Retail, captura de la pantalla de resumen ejecutivo}
+\end{figure}
+
+\subsection{Caso de uso 1: riesgo de stock y prevención de quiebres}
+\textbf{Necesidad del negocio.} Revisar manualmente 3.200 productos distribuidos en 32 tiendas dificulta reconocer a tiempo qué productos pueden agotarse y dónde se concentra la exposición. El caso reduce ese universo a señales accionables para intervenir antes de que la falta de inventario afecte la venta.
+
+\textbf{Lectura y decisión.} La pantalla separa productos en riesgo y críticos, muestra la evolución de la exposición y localiza las tiendas afectadas. El responsable prioriza la reposición de los SKU con mayor urgencia y puede verificar si las acciones adoptadas reducen el riesgo en el siguiente periodo.
+
+\textbf{Importancia para el negocio.} Convierte miles de registros en una cola concreta de decisiones, protege ingresos por disponibilidad y mejora la coordinación entre inventario, tiendas y abastecimiento.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.94\linewidth,height=.68\textheight,keepaspectratio]{riesgo-stock.jpeg}
+\caption{Caso de uso 1: identificación y priorización del riesgo de quiebre de stock.}\label{fig:ui-riesgo-stock}
+\Fuente{Lumina Retail, captura de la pantalla de riesgo de stock}
 \end{figure}
 
 \subsection{Caso de uso 2: forecast y reposición}
-Este caso busca anticipar la demanda y convertirla en un plan diario de reposición por producto y centro de abastecimiento. La lectura conjunta de demanda prevista, inventario disponible y prioridad permite identificar qué productos requieren reposición, cuántas unidades conviene movilizar y dónde debe concentrarse primero el esfuerzo. Su valor para Lumina Retail consiste en mejorar la disponibilidad, reducir decisiones reactivas y utilizar con mayor precisión el inventario de la red.
+\textbf{Necesidad del negocio.} Anticipar la demanda y convertirla en un plan de reposición por producto y centro de abastecimiento evita que la operación dependa de decisiones reactivas. La vista relaciona demanda prevista, cobertura disponible y prioridad de atención.
+
+\textbf{Decisión e impacto.} El responsable identifica qué productos requieren reposición, en qué horizonte y con qué prioridad. El valor empresarial está en elevar la disponibilidad, reducir sobrestock y faltantes, y utilizar con mayor precisión el inventario de toda la red.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.94\linewidth,height=.68\textheight,keepaspectratio]{forecast-reposicion.jpeg}
+\caption{Caso de uso 2: forecast de demanda y planificación de reposición.}\label{fig:ui-forecast-reposicion}
+\Fuente{Lumina Retail, captura de la pantalla de forecast y reposición}
+\end{figure}
 
 \subsection{Caso de uso 3: operación de pedidos y entregas}
-Este caso proporciona una visión consolidada del volumen de pedidos, las unidades movilizadas, el cumplimiento de entrega y las órdenes que requieren intervención. El responsable puede reconocer desviaciones, concentrar la revisión en pedidos en riesgo y priorizar acciones antes de incumplir el compromiso con el cliente. El valor esperado es elevar el nivel de servicio, reducir incidencias y orientar la gestión logística hacia las excepciones que realmente necesitan atención.
+\textbf{Necesidad del negocio.} La operación requiere una lectura única del volumen de pedidos, las unidades movilizadas, el cumplimiento de entrega y las excepciones que demandan intervención. La vista facilita pasar del indicador global al pedido que presenta riesgo.
+
+\textbf{Decisión e impacto.} El responsable prioriza pedidos atrasados o comprometidos, coordina la acción logística y protege la promesa realizada al cliente. Su importancia está en mejorar el nivel de servicio, reducir incidencias y enfocar la gestión en las excepciones de mayor impacto.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.94\linewidth,height=.68\textheight,keepaspectratio]{operacion-pedidos-entregas.jpeg}
+\caption{Caso de uso 3: seguimiento operativo de pedidos y entregas.}\label{fig:ui-operacion-pedidos}
+\Fuente{Lumina Retail, captura de la pantalla de operación de pedidos y entregas}
+\end{figure}
 
 \subsection{Caso de uso 4: mantenimiento de activos}
-Este caso identifica señales anómalas en equipos y sensores vinculados con la continuidad de las tiendas y centros operativos. La información permite distinguir alertas preventivas de situaciones críticas, ubicar el activo afectado y ordenar la intervención según severidad e impacto. Su valor consiste en anticipar fallas, proteger inventario sensible y reducir interrupciones operativas mediante una gestión de mantenimiento basada en condición.
+\textbf{Necesidad del negocio.} Las tiendas y centros operativos dependen de activos cuya falla puede interrumpir la operación, deteriorar inventario sensible o generar costos no planificados. El módulo reúne señales de equipos y sensores para actuar antes de una interrupción.
 
-Los casos 2, 3 y 4 establecen la continuidad funcional de la propuesta. Su evidencia visual podrá incorporarse progresivamente, manteniendo como recorrido validado y prueba principal el caso de anticipación del riesgo de quiebre de stock.
+\textbf{Decisión e impacto.} La lectura por activo, ubicación y severidad permite distinguir prevención de urgencia y ordenar la intervención. Su importancia está en reducir paradas, proteger la continuidad del servicio y transformar el mantenimiento en una práctica basada en condición.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.94\linewidth,height=.68\textheight,keepaspectratio]{mantenimiento-activos.jpeg}
+\caption{Caso de uso 4: monitoreo y priorización del mantenimiento de activos.}\label{fig:ui-mantenimiento-activos}
+\Fuente{Lumina Retail, captura de la pantalla de mantenimiento de activos}
+\end{figure}
+
+\subsection{Lumina Assistant: consulta conversacional de la operación}
+\textbf{Propósito empresarial.} Lumina Assistant agrega una capa conversacional sobre la información de los cuatro casos de uso. Permite preguntar en lenguaje natural por riesgos, reposición, pedidos, entregas o mantenimiento y recibir una respuesta orientada a la decisión, sin tener que conocer la estructura técnica de las tablas o navegar por múltiples pantallas.
+
+\textbf{Valor y límites.} El asistente reduce el tiempo para obtener contexto, facilita el acceso de perfiles no técnicos y ayuda a priorizar la siguiente acción. La respuesta se fundamenta en la información vigente de GCP y complementa, pero no reemplaza, las vistas operativas ni los controles de negocio de cada módulo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.94\linewidth,height=.68\textheight,keepaspectratio]{lumina-assistant.jpeg}
+\caption{Lumina Assistant: consulta en lenguaje natural sobre los cuatro casos de uso.}\label{fig:ui-lumina-assistant}
+\Fuente{Lumina Retail, captura de la pantalla del asistente conversacional}
+\end{figure}
 
 \clearpage
 \Seccion{Matriz de fuentes, verticales, componentes e indicadores}\label{anexo:matriz}
