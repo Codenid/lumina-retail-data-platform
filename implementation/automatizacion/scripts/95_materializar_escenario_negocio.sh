@@ -27,14 +27,16 @@ FROM base"
 
 Q "INSERT INTO \`$PROJECT_ID.$GOLD_DATASET.cu02_plan_reposicion\`
 WITH latest AS (
-  SELECT sku_id,risk_score,available_qty,ROW_NUMBER() OVER(PARTITION BY sku_id ORDER BY as_of DESC) rn
-  FROM \`$PROJECT_ID.$GOLD_DATASET.cu01_riesgo_quiebre_despacho\` WHERE scenario_id='$SCENARIO_ID')
+  SELECT sku_id,risk_score,available_qty,
+    ROW_NUMBER() OVER(PARTITION BY sku_id ORDER BY risk_score DESC,as_of DESC) rn
+  FROM \`$PROJECT_ID.$GOLD_DATASET.cu01_riesgo_quiebre_despacho\`
+  WHERE scenario_id='$SCENARIO_ID' AND DATE(as_of)=CURRENT_DATE())
 SELECT '$SCENARIO_ID',sku_id,FORMAT('WH-%03d',1+MOD(ABS(FARM_FINGERPRINT(sku_id)),8)),
   DATE_ADD(CURRENT_DATE(),INTERVAL 1+MOD(ABS(FARM_FINGERPRINT(sku_id)),7) DAY),
-  CAST(35+ROUND(risk_score*95) AS INT64),
-  CAST(GREATEST(0,35+ROUND(risk_score*95)-available_qty) AS INT64),
+  CAST(28+ROUND(risk_score*72) AS INT64),
+  CAST(GREATEST(0,28+ROUND(risk_score*72)-available_qty) AS INT64),
   CASE WHEN risk_score>=0.80 THEN 'HIGH' WHEN risk_score>=0.65 THEN 'MEDIUM' ELSE 'NORMAL' END
-FROM latest WHERE rn=1 AND risk_score>=0.55"
+FROM latest WHERE rn=1"
 
 Q "INSERT INTO \`$PROJECT_ID.$GOLD_DATASET.cu03_kpis_operativos\`
 SELECT '$SCENARIO_ID',DATE_SUB(CURRENT_DATE(),INTERVAL day_offset DAY),'batch',
