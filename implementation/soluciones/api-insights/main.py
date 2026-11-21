@@ -137,7 +137,7 @@ def fetch_summary() -> dict:
       SELECT COUNT(DISTINCT sku_id) AS at_risk,
              COUNT(DISTINCT IF(risk_score>=0.80,sku_id,NULL)) AS critical
       FROM `{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho`
-      WHERE scenario_id=@scenario_id AND DATE(as_of)=CURRENT_DATE()
+      WHERE scenario_id=@scenario_id AND DATE(as_of)=CURRENT_DATE("America/Lima")
     ),
     categories AS (
       SELECT ARRAY_AGG(STRUCT(name, risk_count) ORDER BY risk_count DESC LIMIT 10) AS items
@@ -145,13 +145,13 @@ def fetch_summary() -> dict:
         SELECT p.category_name AS name, COUNT(*) AS risk_count
         FROM `{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho` r
         JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
-        WHERE p.status='ACTIVE' AND r.scenario_id=@scenario_id AND DATE(r.as_of)=CURRENT_DATE()
+        WHERE p.status='ACTIVE' AND r.scenario_id=@scenario_id AND DATE(r.as_of)=CURRENT_DATE("America/Lima")
         GROUP BY p.category_name
       )
     ),
     kpis AS (
-      SELECT COALESCE(SUM(IF(period_date=CURRENT_DATE(),orders,0)),0) AS orders,
-             COALESCE(SUM(IF(period_date=CURRENT_DATE(),units,0)),0) AS units,
+      SELECT COALESCE(SUM(IF(period_date=CURRENT_DATE("America/Lima"),orders,0)),0) AS orders,
+             COALESCE(SUM(IF(period_date=CURRENT_DATE("America/Lima"),units,0)),0) AS units,
              CAST(ROUND(SUM(orders)*0.78) AS INT64) AS active_customers
       FROM `{PROJECT_ID}.{GOLD_DATASET}.cu03_kpis_operativos`
       WHERE scenario_id=@scenario_id
@@ -171,7 +171,7 @@ def fetch_stock_risk(limit: int) -> dict:
       (SELECT COUNT(*) FROM `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` WHERE status='ACTIVE') AS monitored_skus,
       COUNT(DISTINCT IF(risk_score>=0.8 OR STARTS_WITH(recommended_action,'REPOSICIONAR'), sku_id, NULL)) AS critical_rows,
       COUNT(DISTINCT store_id) AS affected_stores, ROUND(AVG(available_qty),2) AS avg_available_qty
-      FROM {base} WHERE DATE(as_of)=CURRENT_DATE()"""
+      FROM {base} WHERE DATE(as_of)=CURRENT_DATE("America/Lima")"""
     trend_sql = f"""SELECT CAST(DATE(as_of) AS STRING) AS period_date, COUNT(DISTINCT sku_id) AS risk_rows,
       COUNT(DISTINCT IF(risk_score>=0.8 OR STARTS_WITH(recommended_action,'REPOSICIONAR'), sku_id, NULL)) AS critical_rows
       FROM {base} GROUP BY period_date ORDER BY period_date DESC LIMIT @limit"""
@@ -179,7 +179,7 @@ def fetch_stock_risk(limit: int) -> dict:
       COUNT(DISTINCT r.sku_id) AS risk_rows,
       COUNT(DISTINCT IF(r.risk_score>=0.8 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR'), r.sku_id, NULL)) AS critical_rows
       FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
-      WHERE DATE(r.as_of)=CURRENT_DATE()
+      WHERE DATE(r.as_of)=CURRENT_DATE("America/Lima")
       GROUP BY r.store_id, zone_name ORDER BY critical_rows DESC, risk_rows DESC, r.store_id LIMIT @limit"""
     critical_sql = f"""SELECT r.sku_id, COALESCE(p.product_name,r.sku_id) AS product_name,
       COALESCE(p.category_name,'Sin categoría') AS category_name, r.store_id,
@@ -187,7 +187,7 @@ def fetch_stock_risk(limit: int) -> dict:
       ROUND(r.risk_score,3) AS risk_score, r.recommended_action, CAST(r.as_of AS STRING) AS as_of
       FROM {base} r LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_tiendas` s USING(store_id)
       LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_productos` p USING(sku_id)
-      WHERE DATE(r.as_of)=CURRENT_DATE()
+      WHERE DATE(r.as_of)=CURRENT_DATE("America/Lima")
         AND (r.risk_score>=0.8 OR STARTS_WITH(r.recommended_action,'REPOSICIONAR'))
       QUALIFY ROW_NUMBER() OVER(PARTITION BY r.store_id, r.sku_id ORDER BY r.as_of DESC) = 1
       ORDER BY r.risk_score DESC, r.available_qty ASC LIMIT @limit"""
@@ -202,7 +202,7 @@ def fetch_forecast_replenishment(limit: int) -> dict:
     base = f"(SELECT * FROM `{PROJECT_ID}.{GOLD_DATASET}.cu02_plan_reposicion` WHERE scenario_id='{CURRENT_SCENARIO}')"
     risk = f"""(SELECT sku_id, store_id, available_qty, risk_score, recommended_action
       FROM `{PROJECT_ID}.{GOLD_DATASET}.cu01_riesgo_quiebre_despacho`
-      WHERE scenario_id='{CURRENT_SCENARIO}' AND DATE(as_of)=CURRENT_DATE()
+      WHERE scenario_id='{CURRENT_SCENARIO}' AND DATE(as_of)=CURRENT_DATE("America/Lima")
       QUALIFY ROW_NUMBER() OVER(PARTITION BY sku_id ORDER BY risk_score DESC, as_of DESC)=1)"""
     metrics_sql = f"""SELECT COUNT(*) AS plan_rows, COUNT(DISTINCT p.sku_id) AS forecast_skus,
       COUNTIF(p.priority='HIGH') AS high_priority, COUNT(DISTINCT r.store_id) AS affected_stores,
@@ -243,7 +243,7 @@ def fetch_operations_analytics(limit: int) -> dict:
     metrics_sql = f"""SELECT COALESCE(SUM(orders),0) AS total_records,
       COALESCE(SUM(units),0) AS units, COALESCE(AVG(sla_rate),0) AS sla_rate,
       CAST(ROUND(SUM(orders)*(1-AVG(sla_rate))) AS INT64) AS attention
-      FROM {base} WHERE scenario_id='{CURRENT_SCENARIO}' AND period_date=CURRENT_DATE()"""
+      FROM {base} WHERE scenario_id='{CURRENT_SCENARIO}' AND period_date=CURRENT_DATE("America/Lima")"""
     trend_sql = f"""SELECT CAST(period_date AS STRING) AS period_date,
       SUM(orders) AS orders, SUM(units) AS units, ROUND(AVG(sla_rate),3) AS sla_rate,
       CAST(ROUND(SUM(orders)*AVG(sla_rate)) AS INT64) AS delivered,
@@ -279,7 +279,7 @@ def fetch_maintenance_analytics(limit: int) -> dict:
       COUNT(DISTINCT IF(UPPER(severity)='MEDIUM', asset_id, NULL)) AS medium_alerts,
       COUNT(DISTINCT IF(UPPER(severity) NOT IN ('HIGH','MEDIUM'), asset_id, NULL)) AS normal_alerts,
       COUNT(DISTINCT asset_id) AS total_alerts, ROUND(AVG(metric_value),2) AS avg_metric_value
-      FROM {base} WHERE DATE(occurred_at)=CURRENT_DATE()"""
+      FROM {base} WHERE DATE(occurred_at)=CURRENT_DATE("America/Lima")"""
     trend_sql = f"""SELECT CAST(DATE(occurred_at) AS STRING) AS period_date,
       COUNT(DISTINCT asset_id) AS alerts, COUNT(DISTINCT IF(UPPER(severity)='HIGH', asset_id, NULL)) AS high_alerts,
       COUNT(DISTINCT IF(UPPER(severity)='MEDIUM', asset_id, NULL)) AS medium_alerts
@@ -290,7 +290,7 @@ def fetch_maintenance_analytics(limit: int) -> dict:
       COUNT(DISTINCT IF(UPPER(a.severity)='HIGH',a.asset_id,NULL)) AS high_alerts,
       COUNT(DISTINCT IF(UPPER(a.severity)='MEDIUM',a.asset_id,NULL)) AS medium_alerts
       FROM {base} a LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_almacenes` w USING(warehouse_id)
-      WHERE DATE(a.occurred_at)=CURRENT_DATE()
+      WHERE DATE(a.occurred_at)=CURRENT_DATE("America/Lima")
       GROUP BY a.warehouse_id,warehouse_name
       ORDER BY high_alerts DESC,medium_alerts DESC,monitored_assets DESC"""
     def run(sql, label):
@@ -311,7 +311,7 @@ def fetch_maintenance_events(limit: int) -> list[dict]:
         WHEN 'VIBRACION_ELEVADA' THEN 'mm/s' ELSE 'nivel' END AS metric_unit
       FROM `{PROJECT_ID}.{GOLD_DATASET}.cu04_alertas_mantenimiento` a
       LEFT JOIN `{PROJECT_ID}.{GOLD_DATASET}.dim_almacenes` w USING(warehouse_id)
-      WHERE a.scenario_id=@scenario_id AND DATE(a.occurred_at)=CURRENT_DATE()
+      WHERE a.scenario_id=@scenario_id AND DATE(a.occurred_at)=CURRENT_DATE("America/Lima")
       ORDER BY CASE UPPER(a.severity) WHEN 'HIGH' THEN 0 WHEN 'MEDIUM' THEN 1 ELSE 2 END,
         a.metric_value DESC LIMIT @limit"""
     config = bigquery.QueryJobConfig(
@@ -332,14 +332,14 @@ def fetch_streaming_kpis() -> list[dict]:
     de materializaciones anteriores y no deben volver a sumarse.
     """
     sql = f"""
-    SELECT @scenario_id AS scenario_id, CURRENT_DATE() AS period_date,
+    SELECT @scenario_id AS scenario_id, CURRENT_DATE("America/Lima") AS period_date,
            'batch' AS channel, COALESCE(SUM(orders), 0) AS orders,
            COALESCE(SUM(units), 0) AS units,
            CAST(NULL AS FLOAT64) AS conversion_rate,
            CAST(NULL AS NUMERIC) AS delivery_cost,
            CAST(NULL AS FLOAT64) AS sla_rate
     FROM `{PROJECT_ID}.{GOLD_DATASET}.cu03_kpis_operativos`
-    WHERE scenario_id=@scenario_id AND period_date=CURRENT_DATE()
+    WHERE scenario_id=@scenario_id AND period_date=CURRENT_DATE("America/Lima")
     """
     config = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("scenario_id", "STRING", CURRENT_SCENARIO)], maximum_bytes_billed=MAXIMUM_BYTES_BILLED,
                                      labels={"service": "retailsmart-api", "table": "cu03-kpis-live"})
