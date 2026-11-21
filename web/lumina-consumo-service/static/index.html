@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Lumina Retail · Centro de operaciones</title>
-  <link rel="stylesheet" href="styles.css?v=maintenance-control-v1">
+  <link rel="stylesheet" href="styles.css?v=lumina-assistant-help-v1">
   <style>.sidebar nav{display:grid;gap:16px}.nav-group{display:grid;gap:5px}.nav-group-label{padding:0 12px 4px;color:#8fb1b0;font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:800}.nav-group summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center}.nav-group summary::-webkit-details-marker{display:none}.nav-group-chevron{font-size:14px;transition:transform .2s}.nav-group[open] .nav-group-chevron{transform:rotate(180deg)}.risk-trend{height:210px;display:flex;align-items:end;gap:12px;padding:20px 10px 24px;border-bottom:1px solid #dce5e4}.risk-bar{height:100%;flex:1;display:flex;flex-direction:column;justify-content:end;align-items:center;gap:5px;font-size:10px;color:#6e7d82}.risk-bar i{display:block;width:100%;max-width:42px;background:#d99a38;border-radius:6px 6px 0 0;min-height:8px}.risk-bar strong{color:#16232a;font-size:11px}</style>
 </head>
 <body>
+  <section class="login-screen" id="login-screen" aria-label="Acceso seguro">
+    <div class="login-card"><div class="brand login-brand"><span class="brand-mark">✦</span><div><strong>Lumina Retail</strong><small>Centro de operaciones</small></div></div><span class="eyebrow">Acceso seguro</span><h1>Ingresa a tu centro de control</h1><p>Usa una cuenta autorizada para consultar la operación conectada a GCP.</p><form id="login-form"><label>Usuario<input name="username" autocomplete="username" required></label><label>Clave<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">Ingresar</button><div class="login-error" id="login-error" role="alert"></div></form></div>
+  </section>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-mark">✦</span><div><strong>Lumina Retail</strong><small>Centro de operaciones</small></div></div>
@@ -20,6 +23,6 @@
     </main>
   </div>
   <script src="config.js"></script>
-  <script src="app.js?v=maintenance-control-v1"></script>
+  <script src="app.js?v=lumina-assistant-help-v1"></script>
 </body>
 </html>
