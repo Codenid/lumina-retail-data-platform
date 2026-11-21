@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: Lumina Retail Insights API
+  version: 1.0.0
+  description: API de solo lectura que expone productos Gold de los cuatro casos de uso para la web Lumina Retail.
+servers:
+  - url: https://luminalab-insights-api-live-569120123556.us-central1.run.app
+    description: Cloud Run productivo
+security:
+  - googleIdentityToken: []
+tags:
+  - name: Resumen
+  - name: Casos de uso
+  - name: Catálogos
+paths:
+  /api/v1/summary:
+    get:
+      tags: [Resumen]
+      summary: Resumen ejecutivo de la operación
+      parameters: [{$ref: '#/components/parameters/Limit'}]
+      responses: {'200': {$ref: '#/components/responses/SummaryResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/stock-risk:
+    get:
+      tags: [Casos de uso]
+      summary: CU01 — Riesgo de stock
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Scenario'}]
+      responses: {'200': {$ref: '#/components/responses/StockRiskResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/forecast:
+    get:
+      tags: [Casos de uso]
+      summary: CU02 — Forecast y reposición
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Scenario'}]
+      responses: {'200': {$ref: '#/components/responses/ForecastResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/operations:
+    get:
+      tags: [Casos de uso]
+      summary: CU03 — Operación de pedidos y entregas
+      parameters: [{$ref: '#/components/parameters/Limit'}]
+      responses: {'200': {$ref: '#/components/responses/RowsResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/maintenance-risks:
+    get:
+      tags: [Casos de uso]
+      summary: CU04 — Riesgos de mantenimiento
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Scenario'}]
+      responses: {'200': {$ref: '#/components/responses/RowsResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/insights:
+    get:
+      tags: [Casos de uso]
+      summary: Insights streaming y riesgos CU01
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Scenario'}]
+      responses: {'200': {$ref: '#/components/responses/RowsResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/kpis:
+    get:
+      tags: [Casos de uso]
+      summary: KPIs operativos CU03
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Scenario'}]
+      responses: {'200': {$ref: '#/components/responses/RowsResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/inventory-plans:
+    get:
+      tags: [Casos de uso]
+      summary: Planes de reposición CU02
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Scenario'}]
+      responses: {'200': {$ref: '#/components/responses/RowsResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+  /api/v1/catalog/{kind}:
+    get:
+      tags: [Catálogos]
+      summary: Catálogo activo de tiendas, productos, categorías o almacenes
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema: {type: string, enum: [stores, products, categories, warehouses]}
+        - {$ref: '#/components/parameters/Limit'}
+      responses: {'200': {$ref: '#/components/responses/RowsResponse'}, '401': {$ref: '#/components/responses/Unauthorized'}}
+components:
+  securitySchemes:
+    googleIdentityToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token de identidad de Google para invocación privada de Cloud Run.
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      description: Cantidad máxima de filas. Valor por defecto 25 y máximo 100.
+      schema: {type: integer, minimum: 1, maximum: 100, default: 25}
+    Scenario:
+      name: scenario_id
+      in: query
+      description: Escenario operativo opcional.
+      schema: {type: string, example: operacion-vigente}
+  responses:
+    Unauthorized:
+      description: La identidad no está autorizada para invocar Cloud Run.
+    RowsResponse:
+      description: Respuesta JSON con filas y metadatos de origen.
+      content: {application/json: {schema: {$ref: '#/components/schemas/RowsResponse'}}}
+    SummaryResponse:
+      description: Resumen consolidado de dimensiones, riesgo y KPIs.
+      content: {application/json: {schema: {$ref: '#/components/schemas/SummaryResponse'}}}
+    StockRiskResponse:
+      description: Métricas, tendencia, concentración y SKU críticos.
+      content: {application/json: {schema: {$ref: '#/components/schemas/StockRiskResponse'}}}
+    ForecastResponse:
+      description: Métricas, tendencia, concentración y planes de reposición.
+      content: {application/json: {schema: {$ref: '#/components/schemas/ForecastResponse'}}}
+  schemas:
+    RowsResponse:
+      type: object
+      properties:
+        data: {type: array, items: {type: object, additionalProperties: true}}
+        count: {type: integer}
+        source_table: {type: string}
+        scenario_id: {type: string, nullable: true}
+    SummaryResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            total_stores: {type: integer, example: 32}
+            total_products: {type: integer, example: 3200}
+            at_risk: {type: integer, example: 96}
+            critical: {type: integer, example: 31}
+            orders: {type: integer, example: 938}
+            units: {type: integer, example: 2251}
+    StockRiskResponse:
+      type: object
+      properties:
+        data: {type: object, additionalProperties: true}
+        source_table: {type: string}
+    ForecastResponse:
+      type: object
+      properties:
+        data: {type: object, additionalProperties: true}
+        source_table: {type: string}
